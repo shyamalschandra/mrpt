@@ -123,9 +123,8 @@ class CExceptionExternalImageNotFound : public std::runtime_error
  *CImage::setExternalStorage, useful for storing large collections of image
  *objects in memory while loading the image data itself only for the relevant
  *images at any time.
- *		- To move images from one object to the another, use
- *CImage::copyFastFrom
- *rather than the copy operator =.
+ *		- Operator = and copy ctor makes shallow copies. For deep copies, see
+ *clone() or CImage(const CImage&, copy_type_t)
  *		- If you are interested in a smart pointer to an image, use:
  * \code
  * CImage::Ptr myImg = CImage::Create();
@@ -208,7 +207,10 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 			other_img.grayscale(*this);
 		}
 		else
-			shallowCopyFrom(other_img);
+		{
+			// shallow copy
+			*this = other_img;
+		}
 	}
 
 	/** Constructor from a cv::Mat image, making or not a deep copy of the data
@@ -226,8 +228,8 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	template <typename Derived>
 	explicit inline CImage(
-	    const Eigen::MatrixBase<Derived>& m, bool matrix_is_normalized)
-	    : CImage()
+		const Eigen::MatrixBase<Derived>& m, bool matrix_is_normalized)
+		: CImage()
 	{
 #if MRPT_HAS_OPENCV
 		this->setFromMatrix(m, matrix_is_normalized);
@@ -266,6 +268,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	   methods (image filters, undistortion, etc.)
 		@{ */
 
+	/** Resets the image to the state after a default ctor */
+	void clear();
+
 	/** Changes the size of the image, erasing previous contents (does NOT scale
 	 * its current content, for that, see scaleImage).
 	 *  - nChannels: Can be 3 for RGB images or 1 for grayscale images.
@@ -275,20 +280,13 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	void resize(
 		unsigned int width, unsigned int height, TImageChannels nChannels,
-	    bool originTopLeft = true, PixelDepth depth = PixelDepth::D8U);
+		bool originTopLeft = true, PixelDepth depth = PixelDepth::D8U);
 
 	PixelDepth getPixelDepth() const;
 
-	/** Scales this image to a new size, interpolating as needed.
-	 * \sa resize, rotateImage
-	 */
-	void scaleImage(
-		unsigned int width, unsigned int height,
-		TInterpolationMethod interp = IMG_INTERP_CUBIC);
-
 	/** Scales this image to a new size, interpolating as needed, saving the new
-	 * image in a different output object.
-	 * \sa resize, rotateImage
+	 * image in a different output object, or operating in-place if
+	 * `out_img==this`. \sa resize, rotateImage
 	 */
 	void scaleImage(
 		CImage& out_img, unsigned int width, unsigned int height,
@@ -299,8 +297,8 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * \sa resize, scaleImage
 	 */
 	void rotateImage(
-		double angle_radians, unsigned int center_x, unsigned int center_y,
-		double scale = 1.0);
+		CImage& out_img, double ang, unsigned int cx, unsigned int cy,
+		double scale = 1.0) const;
 
 	/** Changes the value of the pixel (x,y).
 	 *  Pixel coordinates starts at the left-top corner of the image, and start
@@ -314,10 +312,6 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 *   raising exceptions, nor leading to memory access errors.
 	 */
 	void setPixel(int x, int y, size_t color) override;
-
-	/** Changes the property of the image stating if the top-left corner (vs.
-	 * bottom-left) is the coordinate reference */
-	void setOriginTopLeft(bool val);
 
 	/** Draws a line.
 	 * \param x0 The starting point x coordinate
@@ -346,49 +340,30 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		const mrpt::img::TColor& color = mrpt::img::TColor(255, 255, 255),
 		unsigned int width = 1) override;
 
-	/** Equalize the image histogram, replacing the original image. \note RGB
-	 * images are first converted to HSV color space, then equalized for
-	 * brightness (V) */
-	void equalizeHistInPlace();
 	/** Equalize the image histogram, saving the new image in the given output
 	 * object.  \note RGB images are first converted to HSV color space, then
 	 * equalized for brightness (V) */
-	void equalizeHist(CImage& outImg) const;
+	void equalizeHist(CImage& out_img) const;
 
-	/** Returns a new image scaled down to half its original size.
+	/** Returns a new image scaled down to half its original size
 	 * \exception std::exception On odd size
 	 * \sa scaleDouble, scaleImage, scaleHalfSmooth
 	 */
-	CImage scaleHalf() const
+	inline CImage scaleHalf(TInterpolationMethod interp) const
 	{
 		CImage ret(UNINITIALIZED_IMAGE);
-		this->scaleHalf(ret);
+		this->scaleHalf(ret, interp);
 		return ret;
 	}
 
 	//! \overload
-	void scaleHalf(CImage& out_image) const;
-
-	/** Returns a new image scaled down to half its original size (averaging
-	 * between every two rows)
-	 * \exception std::exception On odd size
-	 * \sa scaleDouble, scaleImage, scaleHalf
-	 */
-	CImage scaleHalfSmooth() const
-	{
-		CImage ret(UNINITIALIZED_IMAGE);
-		this->scaleHalfSmooth(ret);
-		return ret;
-	}
-
-	//! \overload
-	void scaleHalfSmooth(CImage& out_image) const;
+	void scaleHalf(CImage& out_image, TInterpolationMethod interp) const;
 
 	/** Returns a new image scaled up to double its original size.
 	 * \exception std::exception On odd size
 	 * \sa scaleHalf, scaleImage
 	 */
-	CImage scaleDouble() const
+	inline CImage scaleDouble() const
 	{
 		CImage ret(UNINITIALIZED_IMAGE);
 		this->scaleDouble(ret);
@@ -426,31 +401,6 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	float correlate(
 		const CImage& img2int, int width_init = 0, int height_init = 0) const;
 
-	/**	Computes the correlation between this image and another one,
-	 * encapsulating the openCV function cvMatchTemplate
-	 *
-	 * \param patch_img The "patch" image, which must be equal, or smaller than
-	 * "this" image. This function supports gray-scale (1 channel only) images.
-	 * \param u_search_ini The "x" coordinate of the search window.
-	 * \param v_search_ini The "y" coordinate of the search window.
-	 * \param u_search_size The width of the search window.
-	 * \param v_search_size The height of the search window.
-	 * \param u_max The u coordinate where find the maximun cross correlation
-	 * value.
-	 * \param v_max The v coordinate where find the maximun cross correlation
-	 * value
-	 * \param max_val The maximun value of cross correlation which we can find
-	 * \param out_corr_image  If a !=nullptr pointer is provided, it will be
-	 * saved here the correlation image. The size of the output image is
-	 * (this_width-patch_width+1, this_height-patch_height+1 )
-	 *  Note: By default, the search area is the whole (this) image.
-	 * (by AJOGD @ MAR-2007)
-	 */
-	void cross_correlation(
-		const CImage& patch_img, size_t& u_max, size_t& v_max, double& max_val,
-		int u_search_ini = -1, int v_search_ini = -1, int u_search_size = -1,
-		int v_search_size = -1, CImage* out_corr_image = nullptr) const;
-
 	/**	Computes the correlation matrix between this image and another one.
 	 *   This implementation uses the 2D FFT for achieving reduced computation
 	 * time.
@@ -483,31 +433,22 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	void normalize();
 
 	/** Flips the image vertically. \sa swapRB(), flipHorizontal() */
-	void flipVertical(bool also_swapRB = false);
+	void flipVertical();
 	/** Flips the image horizontally \sa swapRB(), flipVertical() */
 	void flipHorizontal();
 
 	/** Swaps red and blue channels. */
 	void swapRB();
 
-	/** Rectify (un-distort) the image according to some camera parameters, and
-	 * returns an output un-distorted image.
-	 * \param out_img The output rectified image
+	/** Undistort the image according to some camera parameters, and
+	 * returns an output undistorted image.
+	 * \param out_img The output undistorted image
 	 * \param cameraParams The input camera params (containing the intrinsic
 	 * and distortion parameters of the camera)
 	 * \sa mrpt::vision::CUndistortMap
 	 */
-	void rectifyImage(
+	void undistort(
 		CImage& out_img, const mrpt::img::TCamera& cameraParams) const;
-
-	/** Rectify (un-distort) the image according to a certain camera matrix and
-	 * vector of distortion coefficients, replacing "this" with the rectified
-	 * image
-	 * \param cameraParams The input camera params (containing the intrinsic
-	 * and distortion parameters of the camera)
-	 * \sa mrpt::vision::CUndistortMap
-	 */
-	void rectifyImageInPlace(const mrpt::img::TCamera& cameraParams);
 
 	/** Rectify an image (undistorts and rectification) from a stereo pair
 	 * according to a pair of precomputed rectification maps
@@ -519,20 +460,15 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	void rectifyImageInPlace(void* mapX, void* mapY);
 
 	/** Filter the image with a Median filter with a window size WxW, returning
-	 * the filtered image in out_img  */
+	 * the filtered image in out_img. For inplace operation, set out_img to
+	 * this. */
 	void filterMedian(CImage& out_img, int W = 3) const;
 
-	/** Filter the image with a Median filter with a window size WxH, replacing
-	 * "this" image by the filtered one. */
-	void filterMedianInPlace(int W = 3);
-
 	/** Filter the image with a Gaussian filter with a window size WxH,
-	 * returning the filtered image in out_img  */
-	void filterGaussianInPlace(int W = 3, int H = 3);
-
-	/** Filter the image with a Gaussian filter with a window size WxH,
-	 * replacing "this" image by the filtered one. */
-	void filterGaussian(CImage& out_img, int W = 3, int H = 3) const;
+	 * replacing "this" image by the filtered one. For inplace operation, set
+	 * out_img to this. */
+	void filterGaussian(
+		CImage& out_img, int W = 3, int H = 3, double sigma = 1.0) const;
 
 	/** Draw onto this image the detected corners of a chessboard. The length of
 	 * cornerCoords must be the product of the two check_sizes.
@@ -573,20 +509,24 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 
 	/** @name Copy, move & swap operations
 		@{ */
-	[[deprecated("Use shallowCopyFrom() instead")]]  //
-	    inline void
-	    setFromImageReadOnly(const CImage& o)
+	[[deprecated("Use makeShallowCopy() instead")]]  //
+		inline void
+		setFromImageReadOnly(const CImage& o)
 	{
-		shallowCopyFrom(o);
+		*this = makeShallowCopy(o);
 	}
 
-	/** Makes this a shallow copy of the original image */
-	void shallowCopyFrom(const CImage& o);
+	/** Returns a shallow copy of the original image */
+	inline CImage makeShallowCopy() const
+	{
+		CImage r = *this;
+		return r;
+	}
 
-	/** Makes a deep copy of the image
-	 * \sa shallowCopyFrom
-	 */
-	CImage& operator=(const CImage& o);
+	/** Returns a deep copy of this image.
+	 * If the image is externally-stored, there is no difference with a shallow
+	 * copy. \sa makeShallowCopy() */
+	CImage makeDeepCopy() const;
 
 	/** Copies from another image (shallow copy), and, if it is externally
 	 * stored, the image file will be actually loaded into memory in "this"
@@ -600,7 +540,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * \sa operator =
 	 */
 	[[deprecated("Use a=std::move(b); instead ")]] inline void copyFastFrom(
-	    CImage& o)
+		CImage& o)
 	{
 		*this = std::move(o);
 	}
@@ -1017,26 +957,16 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	CImage grayscale() const;
 
 	/** Returns a grayscale version of the image, or itself if it is already a
-	 * grayscale image.
+	 * grayscale image. In-place is supported by setting `ret=*this`.
 	 * \sa colorImage
 	 */
 	void grayscale(CImage& ret) const;
 
 	/** Returns a RGB version of the grayscale image, or itself if it is already
-	 * a RGB image.
+	 * a RGB image. In-place is supported by setting `ret=*this`.
 	 * \sa grayscale
 	 */
 	void colorImage(CImage& ret) const;
-
-	/** Replaces this grayscale image with a RGB version of it.
-	 * \sa grayscaleInPlace
-	 */
-	void colorImageInPlace();
-
-	/** Replaces the image with a grayscale version of it.
-	 * \sa colorImageInPlace
-	 */
-	void grayscaleInPlace();
 
 	/** @} */
 	// ================================================================

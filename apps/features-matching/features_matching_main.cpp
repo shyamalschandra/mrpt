@@ -149,8 +149,6 @@ bool DemoFeatures()
 		archiveFrom(buf) >> img2;
 	}
 
-	// img2.rotateImage(DEG2RAD(20),img2.getWidth()/2,img2.getHeight()/2);
-
 	// Only extract patchs if we are using it: descAny means take the patch:
 	if (desc_to_compute != descAny)
 		fext.options.patchSize = 0;  // Do not extract patch:
