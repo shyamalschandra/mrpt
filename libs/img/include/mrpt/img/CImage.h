@@ -258,13 +258,11 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** Changes the size of the image, erasing previous contents (does NOT scale
 	 * its current content, for that, see scaleImage).
 	 *  - nChannels: Can be 3 for RGB images or 1 for grayscale images.
-	 *  - originTopLeft: Is true if the top-left corner is (0,0). In other
-	 * case, the reference is the bottom-left corner.
 	 * \sa scaleImage
 	 */
 	void resize(
 		unsigned int width, unsigned int height, TImageChannels nChannels,
-		bool originTopLeft = true, PixelDepth depth = PixelDepth::D8U);
+		PixelDepth depth = PixelDepth::D8U);
 
 	PixelDepth getPixelDepth() const;
 

@@ -493,7 +493,7 @@ void CImage::loadFromStreamAsJPEG(CStream& in)
 	// Resize the CImage now:
 	this->resize(
 		cinfo.output_width, cinfo.output_height,
-		cinfo.out_color_components == 1 ? CH_GRAY : CH_RGB, true);
+		cinfo.out_color_components == 1 ? CH_GRAY : CH_RGB);
 	auto& img = m_impl->img;
 
 	/* Step 6: while (scan lines remain to be read) */

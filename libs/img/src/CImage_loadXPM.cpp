@@ -510,7 +510,7 @@ bool mrpt::img::CImage::loadFromXPM(const char* const* xpm_data, bool swap_rb)
 		ASSERTMSG_(
 			chars_per_pixel < 64, "XPM colormaps this large not supported.");
 
-		this->resize(width, height, CH_RGB, true /*originTopLeft*/);
+		this->resize(width, height, CH_RGB);
 		key[chars_per_pixel] = '\0';
 
 		/*

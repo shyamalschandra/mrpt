@@ -86,47 +86,38 @@ static int interpolationMethod2Cv(TInterpolationMethod i)
 	return -1;
 }
 
-static uint32_t pixelDepth2CvDepth(PixelDepth d)
+template <typename RET = uint32_t>
+RET pixelDepth2CvDepth(PixelDepth d)
 {
+	// clang-format off
 	switch (d)
 	{
-		case PixelDepth::D8U:
-			return IPL_DEPTH_8U;
-		case PixelDepth::D8S:
-			return IPL_DEPTH_8S;
-		case PixelDepth::D16U:
-			return IPL_DEPTH_16U;
-		case PixelDepth::D16S:
-			return IPL_DEPTH_16S;
-		case PixelDepth::D32S:
-			return IPL_DEPTH_32S;
-		case PixelDepth::D32F:
-			return IPL_DEPTH_32F;
-		case PixelDepth::D64F:
-			return IPL_DEPTH_64F;
+	    case PixelDepth::D8U:  return static_cast<RET>(CV_8U);
+	    case PixelDepth::D8S:  return static_cast<RET>(CV_8S);
+	    case PixelDepth::D16U: return static_cast<RET>(CV_16U);
+	    case PixelDepth::D16S: return static_cast<RET>(CV_16S);
+	    case PixelDepth::D32S: return static_cast<RET>(CV_32S);
+	    case PixelDepth::D32F: return static_cast<RET>(CV_32F);
+	    case PixelDepth::D64F: return static_cast<RET>(CV_64F);
 	}
-	return std::numeric_limits<uint32_t>::max();
+	// clang-format on
+	return std::numeric_limits<RET>::max();
 }
 
 static PixelDepth cvDepth2PixelDepth(int64_t d)
 {
+	// clang-format off
 	switch (d)
 	{
-		case IPL_DEPTH_8U:
-			return PixelDepth::D8U;
-		case IPL_DEPTH_8S:
-			return PixelDepth::D8S;
-		case IPL_DEPTH_16U:
-			return PixelDepth::D16U;
-		case IPL_DEPTH_16S:
-			return PixelDepth::D16S;
-		case IPL_DEPTH_32S:
-			return PixelDepth::D32S;
-		case IPL_DEPTH_32F:
-			return PixelDepth::D32F;
-		case IPL_DEPTH_64F:
-			return PixelDepth::D64F;
+	    case CV_8U:  return PixelDepth::D8U;
+	    case CV_8S:  return PixelDepth::D8S;
+	    case CV_16U: return PixelDepth::D16U;
+	    case CV_16S: return PixelDepth::D16S;
+	    case CV_32S: return PixelDepth::D32S;
+	    case CV_32F: return PixelDepth::D32F;
+	    case CV_64F: return PixelDepth::D64F;
 	}
+	// clang-format on
 	return PixelDepth::D8U;
 }
 #endif
@@ -136,12 +127,11 @@ CImage::CImage() : m_impl(mrpt::make_impl<CImage::Impl>()) {}
 
 // Ctor with size
 CImage::CImage(
-	unsigned int width, unsigned int height, TImageChannels nChannels,
-	bool originTopLeft)
+	unsigned int width, unsigned int height, TImageChannels nChannels)
 	: CImage()
 {
 	MRPT_START
-	resize(width, height, nChannels, originTopLeft);
+	resize(width, height, nChannels);
 	MRPT_END
 }
 
@@ -191,12 +181,15 @@ CImage CImage::makeDeepCopy() const
 
 void CImage::resize(
 	unsigned int width, unsigned int height, TImageChannels nChannels,
-	bool originTopLeft, PixelDepth depth)
+	PixelDepth depth)
 {
 	MRPT_START
 
 #if MRPT_HAS_OPENCV
-	makeSureImageIsLoaded();  // For delayed loaded images stored externally
+	// Dont call makeSureImageIsLoaded() here,
+	// since it will throw if resize() is called from a ctor, where it's legit
+	// for the img to be uninitialized.
+
 	// If we're resizing to exactly the current size, do nothing:
 	{
 		_IplImage ipl = m_impl->img;
@@ -204,7 +197,6 @@ void CImage::resize(
 		if (static_cast<unsigned int>(ipl.width) == width &&
 			static_cast<unsigned int>(ipl.height) == height &&
 			ipl.nChannels == nChannels &&
-			ipl.origin == (originTopLeft ? 0 : 1) &&
 			static_cast<unsigned int>(ipl.depth) == pixelDepth2CvDepth(depth))
 		{
 			// Nothing to do:
@@ -218,7 +210,7 @@ void CImage::resize(
 #endif
 	m_impl->img = cv::Mat(
 		static_cast<int>(height), static_cast<int>(width),
-		pixelDepth2CvDepth(depth));
+		pixelDepth2CvDepth<int>(depth) + ((nChannels - 1) << CV_CN_SHIFT));
 
 #if IMAGE_ALLOC_PERFLOG
 	alloc_tims.leave(sLog.c_str());
@@ -302,7 +294,7 @@ void CImage::loadFromMemoryBuffer(
 	MRPT_START
 
 #if MRPT_HAS_OPENCV
-	resize(width, height, color ? CH_RGB : CH_GRAY, true);
+	resize(width, height, color ? CH_RGB : CH_GRAY);
 	m_imgIsExternalStorage = false;
 
 	_IplImage ii(m_impl->img);
@@ -556,9 +548,7 @@ void CImage::serializeFrom(mrpt::serialization::CArchive& in, uint8_t version)
 
 			in >> width >> height >> nChannels >> originTopLeft >> imgLength;
 
-			resize(
-				width, height, static_cast<TImageChannels>(nChannels),
-				originTopLeft != 0);
+			resize(width, height, static_cast<TImageChannels>(nChannels));
 			in.ReadBuffer(m_impl->img.data, imgLength);
 		}
 		break;
@@ -614,8 +604,7 @@ void CImage::serializeFrom(mrpt::serialization::CArchive& in, uint8_t version)
 					}
 					resize(
 						static_cast<uint32_t>(width),
-						static_cast<uint32_t>(height), CH_GRAY, origin == 0,
-						depth);
+						static_cast<uint32_t>(height), CH_GRAY, depth);
 					ASSERT_(
 						static_cast<uint32_t>(imageSize) ==
 						static_cast<uint32_t>(width) *
@@ -690,7 +679,7 @@ void CImage::serializeFrom(mrpt::serialization::CArchive& in, uint8_t version)
 								const int32_t real_w = -width;
 								const int32_t real_h = -height;
 
-								resize(real_w, real_h, CH_RGB, true);
+								resize(real_w, real_h, CH_RGB);
 
 								auto& img = m_impl->img;
 								const size_t bytes_per_row = img.cols * 3;
@@ -708,7 +697,7 @@ void CImage::serializeFrom(mrpt::serialization::CArchive& in, uint8_t version)
 							{
 								// it's a 0xN or Nx0 image: just resize and load
 								// nothing:
-								resize(width, height, CH_RGB, true);
+								resize(width, height, CH_RGB);
 							}
 						}
 					}
@@ -972,7 +961,7 @@ void CImage::loadFromMemoryBuffer(
 #if MRPT_HAS_OPENCV
 	MRPT_START
 
-	resize(width, height, CH_RGB, true, PixelDepth::D8U);
+	resize(width, height, CH_RGB, PixelDepth::D8U);
 
 	// Copy the image data:
 	for (unsigned int y = 0; y < height; y++)
@@ -1006,12 +995,8 @@ void CImage::setPixel(int x, int y, size_t color)
 #endif
 
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
-
 	auto& img = m_impl->img;
 
-#if defined(_DEBUG) || (MRPT_ALWAYS_CHECKS_DEBUG)
-	ASSERT_(img.data());
-#endif
 	ASSERT_(this->getPixelDepth() == mrpt::img::PixelDepth::D8U);
 
 	if (x >= 0 && y >= 0 && y < img.rows && x < img.cols)
@@ -1277,21 +1262,23 @@ void CImage::cross_correlation_FFT(
 	// Set limits:
 	if (u_search_ini == -1) u_search_ini = 0;
 	if (v_search_ini == -1) v_search_ini = 0;
-	if (u_search_size == -1) u_search_size = getWidth();
-	if (v_search_size == -1) v_search_size = getHeight();
+	if (u_search_size == -1) u_search_size = static_cast<int>(getWidth());
+	if (v_search_size == -1) v_search_size = static_cast<int>(getHeight());
 
 	int u_search_end = u_search_ini + u_search_size - 1;
 	int v_search_end = v_search_ini + v_search_size - 1;
 
-	ASSERT_(u_search_end < getWidth());
-	ASSERT_(v_search_end < getHeight());
+	ASSERT_(u_search_end < static_cast<int>(getWidth()));
+	ASSERT_(v_search_end < static_cast<int>(getHeight()));
 
 	// Find smallest valid size:
 	size_t x, y;
-	size_t actual_lx = std::max(u_search_size, (int)in_img.getWidth());
-	size_t actual_ly = std::max(v_search_size, (int)in_img.getHeight());
-	size_t lx = mrpt::round2up(actual_lx);
-	size_t ly = mrpt::round2up(actual_ly);
+	size_t actual_lx =
+		std::max(static_cast<size_t>(u_search_size), in_img.getWidth());
+	size_t actual_ly =
+		std::max(static_cast<size_t>(v_search_size), in_img.getHeight());
+	size_t lx = mrpt::round2up<size_t>(actual_lx);
+	size_t ly = mrpt::round2up<size_t>(actual_ly);
 
 	CMatrix i1(ly, lx), i2(ly, lx);
 
@@ -1441,7 +1428,11 @@ void CImage::makeSureImageIsLoaded() const
 				wholeFile.c_str());
 	}
 	else
-		THROW_EXCEPTION("img is nullptr in a non-externally stored image.");
+	{
+		THROW_EXCEPTION(
+			"Trying to access uninitialized image in a non externally-stored "
+			"image.");
+	}
 }
 
 void CImage::getExternalStorageFileAbsolutePath(std::string& out_path) const
@@ -1947,8 +1938,8 @@ bool CImage::loadTGA(
 	stream.close();
 
 	// Move data to images:
-	out_RGB.resize(width, height, CH_RGB, true);
-	out_alpha.resize(width, height, CH_GRAY, true);
+	out_RGB.resize(width, height, CH_RGB);
+	out_alpha.resize(width, height, CH_GRAY);
 
 	size_t idx = 0;
 	for (int r = 0; r < height; r++)
