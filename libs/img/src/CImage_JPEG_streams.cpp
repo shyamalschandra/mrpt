@@ -60,8 +60,8 @@ init_destination(j_compress_ptr cinfo)
 	/* Allocate the output buffer --- it will be released when done with image
 	 */
 	dest->buffer = reinterpret_cast<JOCTET*>(((*cinfo->mem->alloc_small)(
-	    reinterpret_cast<j_common_ptr>(cinfo), JPOOL_IMAGE,
-	    OUTPUT_BUF_SIZE * sizeof(JOCTET))));
+		reinterpret_cast<j_common_ptr>(cinfo), JPOOL_IMAGE,
+		OUTPUT_BUF_SIZE * sizeof(JOCTET))));
 
 	dest->pub.next_output_byte = dest->buffer;
 	dest->pub.free_in_buffer = OUTPUT_BUF_SIZE;
@@ -492,8 +492,8 @@ void CImage::loadFromStreamAsJPEG(CStream& in)
 
 	// Resize the CImage now:
 	this->resize(
-	    cinfo.output_width, cinfo.output_height,
-	    cinfo.out_color_components == 1 ? CH_GRAY : CH_RGB, true);
+		cinfo.output_width, cinfo.output_height,
+		cinfo.out_color_components == 1 ? CH_GRAY : CH_RGB, true);
 	auto& img = m_impl->img;
 
 	/* Step 6: while (scan lines remain to be read) */

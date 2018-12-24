@@ -32,9 +32,9 @@ IMPLEMENTS_SERIALIZABLE(CObservationStereoImages, CObservation, mrpt::obs)
 CObservationStereoImages::CObservationStereoImages(
 	IplImage* iplImageLeft, IplImage* iplImageRight,
 	IplImage* iplImageDisparity, bool ownMemory)
-	: imageLeft(UNINITIALIZED_IMAGE),
-	  imageRight(UNINITIALIZED_IMAGE),
-	  imageDisparity(UNINITIALIZED_IMAGE),
+	: imageLeft(),
+	  imageRight(),
+	  imageDisparity(),
 	  hasImageDisparity(iplImageDisparity != nullptr),
 	  hasImageRight(iplImageRight != nullptr)
 {

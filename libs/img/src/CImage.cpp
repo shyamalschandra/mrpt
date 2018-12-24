@@ -217,8 +217,8 @@ void CImage::resize(
 	alloc_tims.enter(sLog.c_str());
 #endif
 	m_impl->img = cv::Mat(
-	    static_cast<int>(height), static_cast<int>(width),
-	    pixelDepth2CvDepth(depth));
+		static_cast<int>(height), static_cast<int>(width),
+		pixelDepth2CvDepth(depth));
 
 #if IMAGE_ALLOC_PERFLOG
 	alloc_tims.leave(sLog.c_str());
@@ -357,7 +357,7 @@ void CImage::loadFromMemoryBuffer(
 }
 
 unsigned char* CImage::operator()(
-    unsigned int ucol, unsigned int urow, unsigned int uchannel) const
+	unsigned int ucol, unsigned int urow, unsigned int uchannel) const
 {
 #if MRPT_HAS_OPENCV
 
@@ -373,7 +373,7 @@ unsigned char* CImage::operator()(
 #if defined(_DEBUG) || (MRPT_ALWAYS_CHECKS_DEBUG)
 	ASSERT_(m_impl && !m_impl->img.empty());
 	if (row >= m_impl->img.rows || col >= m_impl->img.cols ||
-	    channel >= m_impl->img.channels())
+		channel >= m_impl->img.channels())
 	{
 		THROW_EXCEPTION(format(
 			"Pixel coordinates/channel out of bounds: row=%u/%u col=%u/%u "
@@ -613,14 +613,14 @@ void CImage::serializeFrom(mrpt::serialization::CArchive& in, uint8_t version)
 						depth = PixelDepth(tempdepth);
 					}
 					resize(
-					    static_cast<uint32_t>(width),
-					    static_cast<uint32_t>(height), CH_GRAY, origin == 0,
-					    depth);
+						static_cast<uint32_t>(width),
+						static_cast<uint32_t>(height), CH_GRAY, origin == 0,
+						depth);
 					ASSERT_(
-					    static_cast<uint32_t>(imageSize) ==
-					    static_cast<uint32_t>(width) *
-					        static_cast<uint32_t>(height) *
-					        m_impl->img.step[0]);
+						static_cast<uint32_t>(imageSize) ==
+						static_cast<uint32_t>(width) *
+							static_cast<uint32_t>(height) *
+							m_impl->img.step[0]);
 
 					if (version == 2)
 					{
@@ -878,12 +878,12 @@ static void my_img_to_grayscale(const cv::Mat& src, cv::Mat& dest)
 // If possible, use SSE optimized version:
 #if MRPT_HAS_SSE3
 	if (is_aligned<16>(src.data) && (src.cols & 0xF) == 0 &&
-	    static_cast<int>(src.step[0]) == src.cols * src.channels() &&
-	    static_cast<int>(dest.step[0]) == dest.cols * dest.channels())
+		static_cast<int>(src.step[0]) == src.cols * src.channels() &&
+		static_cast<int>(dest.step[0]) == dest.cols * dest.channels())
 	{
 		ASSERT_(is_aligned<16>(dest.data));
 		image_SSSE3_bgr_to_gray_8u(
-		    src.ptr<uint8_t>(), dest.ptr<uint8_t>(), src.cols, src.rows);
+			src.ptr<uint8_t>(), dest.ptr<uint8_t>(), src.cols, src.rows);
 		return;
 	}
 #endif
@@ -925,9 +925,9 @@ void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 
 	// If possible, use SSE optimized version:
 	if (is_aligned<16>(img.data) && is_aligned<16>(img_out.data) &&
-	    (w & 0xF) == 0 &&
-	    static_cast<int>(img.step[0]) == img.cols * img.channels() &&
-	    static_cast<int>(img_out.step[0]) == img_out.cols * img_out.channels())
+		(w & 0xF) == 0 &&
+		static_cast<int>(img.step[0]) == img.cols * img.channels() &&
+		static_cast<int>(img_out.step[0]) == img_out.cols * img_out.channels())
 	{
 #if MRPT_HAS_SSE3
 		if (img.channels() == 3 && interp == IMG_INTERP_NN)
@@ -1727,8 +1727,8 @@ void CImage::equalizeHist(CImage& out_img) const
 }
 template <unsigned int HALF_WIN_SIZE>
 void image_KLT_response_template(
-    const uint8_t* in, const unsigned widthStep, unsigned int x, unsigned int y,
-    int32_t& _gxx, int32_t& _gyy, int32_t& _gxy)
+	const uint8_t* in, const unsigned widthStep, unsigned int x, unsigned int y,
+	int32_t& _gxx, int32_t& _gyy, int32_t& _gxy)
 {
 	const auto min_x = x - HALF_WIN_SIZE;
 	const auto min_y = y - HALF_WIN_SIZE;
@@ -1766,7 +1766,7 @@ float CImage::KLT_response(
 
 	const auto& im1 = m_impl->img;
 	const auto img_w = static_cast<unsigned int>(im1.cols),
-	           img_h = static_cast<unsigned int>(im1.rows);
+			   img_h = static_cast<unsigned int>(im1.rows);
 	const auto widthStep = im1.step[0];
 
 	// If any of those predefined values worked, do the generic way:

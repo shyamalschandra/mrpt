@@ -61,12 +61,6 @@ enum TImageChannels : uint8_t
 };
 
 /** For usage in one of the CImage constructors */
-enum ctor_CImage_uninitialized
-{
-	UNINITIALIZED_IMAGE = 0
-};
-
-/** For usage in one of the CImage constructors */
 enum ctor_CImage_ref_or_gray
 {
 	FAST_REF_OR_CONVERT_TO_GRAY = 1
@@ -159,7 +153,11 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Constructors & destructor
 		@{ */
 
-	/** Default constructor: initialize to empty image. */
+	/** Default constructor: initialize to empty image. It's an error trying to
+	 * access the image in such a state. Either call resize(), assign from
+	 * another image, load from disk, deserialize from an archive, etc. to
+	 * properly initialize the image.
+	 */
 	CImage();
 
 	/** Constructor for a given image size and type.
@@ -171,26 +169,12 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	CImage(
 		unsigned int width, unsigned int height,
-		TImageChannels nChannels = CH_RGB, bool originTopLeft = true);
-
-	/** Fast constructor that leaves the image uninitialized (the internal
-	 * IplImage pointer set to nullptr).
-	 *  Use only when you know the image will be soon be assigned another
-	 * image.
-	 *  Example of usage:
-	 *   \code
-	 *    CImage myImg(UNINITIALIZED_IMAGE);
-	 *   \endcode
-	 */
-	inline CImage(ctor_CImage_uninitialized) {}
+		TImageChannels nChannels = CH_RGB);
 
 	/** Fast constructor of a grayscale version of another image, making a
-	 * <b>reference</b> to the original image if it already was in grayscale, or
+	 * **shallow copy** from the original image if it already was grayscale, or
 	 * otherwise creating a new grayscale image and converting the original
 	 * image into it.
-	 *   It's <b>very important to keep in mind</b> that the original image
-	 * can't be destroyed before the new object being created with this
-	 * constructor.
 	 * Example of usage:
 	 *   \code
 	 *     void my_func(const CImage &in_img) {
@@ -351,7 +335,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	inline CImage scaleHalf(TInterpolationMethod interp) const
 	{
-		CImage ret(UNINITIALIZED_IMAGE);
+		CImage ret;
 		this->scaleHalf(ret, interp);
 		return ret;
 	}
@@ -365,7 +349,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	inline CImage scaleDouble() const
 	{
-		CImage ret(UNINITIALIZED_IMAGE);
+		CImage ret;
 		this->scaleDouble(ret);
 		return ret;
 	}
@@ -824,9 +808,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	template <typename Derived>
 	void setFromRGBMatrices(
-	    const Eigen::MatrixBase<Derived>& r,
-	    const Eigen::MatrixBase<Derived>& g,
-	    const Eigen::MatrixBase<Derived>& b, bool matrix_is_normalized = true)
+		const Eigen::MatrixBase<Derived>& r,
+		const Eigen::MatrixBase<Derived>& g,
+		const Eigen::MatrixBase<Derived>& b, bool matrix_is_normalized = true)
 	{
 		MRPT_START
 		makeSureImageIsLoaded();  // For delayed loaded images stored externally
