@@ -28,13 +28,13 @@
 #include <opencv2/opencv_modules.hpp>
 // Core:
 #include <opencv2/core.hpp>
-#include <opencv2/core_c.h>
+#include <opencv2/core/core_c.h>
 // Highgui:
 #include <opencv2/highgui.hpp>
-#include <opencv2/highgui_c.h>
+#include <opencv2/highgui/highgui_c.h>
 // imgproc:
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
 // features2d:
 #include <opencv2/features2d.hpp>
 // tracking:

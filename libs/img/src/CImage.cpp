@@ -28,6 +28,8 @@
 // Universal include for all versions of OpenCV
 #include <mrpt/otherlibs/do_opencv_includes.h>
 
+#include "CImage_impl.h"
+
 #if MRPT_HAS_MATLAB
 #include <mexplus/mxarray.h>
 #endif
@@ -68,13 +70,6 @@ void CImage::setImagesPathBase(const std::string& path)
 #if IMAGE_ALLOC_PERFLOG
 mrpt::img::CTimeLogger alloc_tims;
 #endif
-
-struct CImage::Impl
-{
-#if MRPT_HAS_OPENCV
-	cv::Mat img;
-#endif
-};
 
 #if MRPT_HAS_OPENCV
 static int interpolationMethod2Cv(TInterpolationMethod i)
@@ -221,7 +216,9 @@ void CImage::resize(
 	const std::string sLog = mrpt::format("cvCreateImage %ux%u", width, height);
 	alloc_tims.enter(sLog.c_str());
 #endif
-	m_impl->img = cv::Mat(height, width, pixelDepth2CvDepth(depth));
+	m_impl->img = cv::Mat(
+	    static_cast<int>(height), static_cast<int>(width),
+	    pixelDepth2CvDepth(depth));
 
 #if IMAGE_ALLOC_PERFLOG
 	alloc_tims.leave(sLog.c_str());
@@ -360,7 +357,7 @@ void CImage::loadFromMemoryBuffer(
 }
 
 unsigned char* CImage::operator()(
-	unsigned int col, unsigned int row, unsigned int channel) const
+    unsigned int ucol, unsigned int urow, unsigned int uchannel) const
 {
 #if MRPT_HAS_OPENCV
 
@@ -369,11 +366,14 @@ unsigned char* CImage::operator()(
 #endif
 
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
+	const auto col = static_cast<int>(ucol);
+	const auto row = static_cast<int>(urow);
+	const auto channel = static_cast<int>(uchannel);
 
-#if 1 || defined(_DEBUG) || (MRPT_ALWAYS_CHECKS_DEBUG)
+#if defined(_DEBUG) || (MRPT_ALWAYS_CHECKS_DEBUG)
 	ASSERT_(m_impl && !m_impl->img.empty());
 	if (row >= m_impl->img.rows || col >= m_impl->img.cols ||
-		channel >= m_impl->img.channels())
+	    channel >= m_impl->img.channels())
 	{
 		THROW_EXCEPTION(format(
 			"Pixel coordinates/channel out of bounds: row=%u/%u col=%u/%u "
@@ -612,8 +612,15 @@ void CImage::serializeFrom(mrpt::serialization::CArchive& in, uint8_t version)
 						in >> tempdepth;
 						depth = PixelDepth(tempdepth);
 					}
-					resize(width, height, CH_GRAY, origin == 0, depth);
-					ASSERT_(imageSize == width * height * m_impl->img.step[0]);
+					resize(
+					    static_cast<uint32_t>(width),
+					    static_cast<uint32_t>(height), CH_GRAY, origin == 0,
+					    depth);
+					ASSERT_(
+					    static_cast<uint32_t>(imageSize) ==
+					    static_cast<uint32_t>(width) *
+					        static_cast<uint32_t>(height) *
+					        m_impl->img.step[0]);
 
 					if (version == 2)
 					{
@@ -871,12 +878,12 @@ static void my_img_to_grayscale(const cv::Mat& src, cv::Mat& dest)
 // If possible, use SSE optimized version:
 #if MRPT_HAS_SSE3
 	if (is_aligned<16>(src.data) && (src.cols & 0xF) == 0 &&
-		src.step[0] == src.cols * src.channels() &&
-		dest.step[0] == dest.cols * dest.channels())
+	    static_cast<int>(src.step[0]) == src.cols * src.channels() &&
+	    static_cast<int>(dest.step[0]) == dest.cols * dest.channels())
 	{
 		ASSERT_(is_aligned<16>(dest.data));
 		image_SSSE3_bgr_to_gray_8u(
-			(const uint8_t*)src.data, (uint8_t*)dest.data, src.cols, src.rows);
+		    src.ptr<uint8_t>(), dest.ptr<uint8_t>(), src.cols, src.rows);
 		return;
 	}
 #endif
@@ -918,8 +925,9 @@ void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 
 	// If possible, use SSE optimized version:
 	if (is_aligned<16>(img.data) && is_aligned<16>(img_out.data) &&
-		(w & 0xF) == 0 && img.step[0] == img.cols * img.channels() &&
-		img_out.step[0] == img_out.cols * img_out.channels())
+	    (w & 0xF) == 0 &&
+	    static_cast<int>(img.step[0]) == img.cols * img.channels() &&
+	    static_cast<int>(img_out.step[0]) == img_out.cols * img_out.channels())
 	{
 #if MRPT_HAS_SSE3
 		if (img.channels() == 3 && interp == IMG_INTERP_NN)
@@ -1265,7 +1273,6 @@ void CImage::cross_correlation_FFT(
 	MRPT_START
 
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
-	const auto& img = m_impl->img;
 
 	// Set limits:
 	if (u_search_ini == -1) u_search_ini = 0;
@@ -1720,11 +1727,11 @@ void CImage::equalizeHist(CImage& out_img) const
 }
 template <unsigned int HALF_WIN_SIZE>
 void image_KLT_response_template(
-	const uint8_t* in, const unsigned widthStep, int x, int y, int32_t& _gxx,
-	int32_t& _gyy, int32_t& _gxy)
+    const uint8_t* in, const unsigned widthStep, unsigned int x, unsigned int y,
+    int32_t& _gxx, int32_t& _gyy, int32_t& _gxy)
 {
-	const unsigned int min_x = x - HALF_WIN_SIZE;
-	const unsigned int min_y = y - HALF_WIN_SIZE;
+	const auto min_x = x - HALF_WIN_SIZE;
+	const auto min_y = y - HALF_WIN_SIZE;
 
 	int32_t gxx = 0;
 	int32_t gxy = 0;
@@ -1758,7 +1765,8 @@ float CImage::KLT_response(
 #if MRPT_HAS_OPENCV
 
 	const auto& im1 = m_impl->img;
-	const auto img_w = im1.cols, img_h = im1.rows;
+	const auto img_w = static_cast<unsigned int>(im1.cols),
+	           img_h = static_cast<unsigned int>(im1.rows);
 	const auto widthStep = im1.step[0];
 
 	// If any of those predefined values worked, do the generic way:
@@ -1943,16 +1951,14 @@ bool CImage::loadTGA(
 	out_alpha.resize(width, height, CH_GRAY, true);
 
 	size_t idx = 0;
-	for (unsigned int r = 0; r < height; r++)
+	for (int r = 0; r < height; r++)
 	{
-		unsigned int actual_row = origin_is_low_corner ? (height - 1 - r) : r;
-		IplImage* ipl = out_RGB.img;
-		auto* data =
-			(unsigned char*)&ipl->imageData[actual_row * ipl->widthStep];
+		const auto actual_row = origin_is_low_corner ? (height - 1 - r) : r;
+		auto& img = out_RGB.m_impl->img;
+		auto data = img.ptr<uint8_t>(actual_row);
 
-		IplImage* ipl_alpha = out_alpha.img;
-		auto* data_alpha =
-			(unsigned char*)&ipl->imageData[actual_row * ipl_alpha->widthStep];
+		auto& img_alpha = out_alpha.m_impl->img;
+		auto data_alpha = img_alpha.ptr<uint8_t>(actual_row);
 
 		for (unsigned int c = 0; c < width; c++)
 		{

@@ -513,7 +513,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		inline void
 		setFromImageReadOnly(const CImage& o)
 	{
-		*this = makeShallowCopy(o);
+		*this = o.makeShallowCopy();
 	}
 
 	/** Returns a shallow copy of the original image */
@@ -824,18 +824,15 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 */
 	template <typename Derived>
 	void setFromRGBMatrices(
-		const Eigen::MatrixBase<Derived>& m_r,
-		const Eigen::MatrixBase<Derived>& m_g,
-		const Eigen::MatrixBase<Derived>& m_b, bool matrix_is_normalized = true)
+	    const Eigen::MatrixBase<Derived>& r,
+	    const Eigen::MatrixBase<Derived>& g,
+	    const Eigen::MatrixBase<Derived>& b, bool matrix_is_normalized = true)
 	{
 		MRPT_START
 		makeSureImageIsLoaded();  // For delayed loaded images stored externally
-		ASSERT_(img);
-		ASSERT_((m_r.size() == m_g.size()) && (m_r.size() == m_b.size()));
-		const unsigned int lx = m_r.cols();
-		const unsigned int ly = m_r.rows();
+		ASSERT_((r.size() == g.size()) && (r.size() == b.size()));
+		const unsigned int lx = r.cols(), ly = r.rows();
 		this->resize(lx, ly, CH_RGB);
-		this->setChannelsOrder_RGB();
 
 		if (matrix_is_normalized)
 		{  // Matrix: [0,1]
@@ -844,12 +841,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 				unsigned char* pixels = this->get_unsafe(0, y, 0);
 				for (unsigned int x = 0; x < lx; x++)
 				{
-					(*pixels++) =
-						static_cast<unsigned char>(m_r.get_unsafe(y, x) * 255);
-					(*pixels++) =
-						static_cast<unsigned char>(m_g.get_unsafe(y, x) * 255);
-					(*pixels++) =
-						static_cast<unsigned char>(m_b.get_unsafe(y, x) * 255);
+					(*pixels++) = static_cast<uint8_t>(r.coeff(y, x) * 255);
+					(*pixels++) = static_cast<uint8_t>(g.coeff(y, x) * 255);
+					(*pixels++) = static_cast<uint8_t>(b.coeff(y, x) * 255);
 				}
 			}
 		}
@@ -860,12 +854,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 				unsigned char* pixels = this->get_unsafe(0, y, 0);
 				for (unsigned int x = 0; x < lx; x++)
 				{
-					(*pixels++) =
-						static_cast<unsigned char>(m_r.get_unsafe(y, x));
-					(*pixels++) =
-						static_cast<unsigned char>(m_g.get_unsafe(y, x));
-					(*pixels++) =
-						static_cast<unsigned char>(m_b.get_unsafe(y, x));
+					(*pixels++) = static_cast<uint8_t>(r.coeff(y, x));
+					(*pixels++) = static_cast<uint8_t>(g.coeff(y, x));
+					(*pixels++) = static_cast<uint8_t>(b.coeff(y, x));
 				}
 			}
 		}
