@@ -252,7 +252,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	   methods (image filters, undistortion, etc.)
 		@{ */
 
-	/** Resets the image to the state after a default ctor */
+	/** Resets the image to the state after a default ctor. Accessing the image
+	 * after will throw an exception, unless it is formerly initialized somehow:
+	 * loading an image from disk, calling rezize(), etc. */
 	void clear();
 
 	/** Changes the size of the image, erasing previous contents (does NOT scale
@@ -492,7 +494,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Copy, move & swap operations
 		@{ */
 	[[deprecated("Use makeShallowCopy() instead")]]  //
-		inline void
+	inline void
 		setFromImageReadOnly(const CImage& o)
 	{
 		*this = o.makeShallowCopy();
@@ -550,8 +552,55 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	  operator better, which checks the coordinates.
 	  \sa CImage::operator()
 	  */
-	unsigned char* get_unsafe(
-		unsigned int col, unsigned int row, unsigned int channel = 0) const;
+	uint8_t* get_unsafe(
+		unsigned int col, unsigned int row, uint8_t channel = 0) const;
+
+	/**  Access to pixels without checking boundaries, and doing a
+	 * reinterpret_cast<> of the data as the given type.
+	 *\sa The CImage::operator() which does check for coordinate limits.
+	 */
+	template <typename T>
+	const T& at(
+		unsigned int col, unsigned int row, unsigned int channel = 0) const
+	{
+		return *reinterpret_cast<const T*>(get_unsafe(col, row, channel));
+	}
+	/** \overload Non-const case */
+	template <typename T>
+	T& at(unsigned int col, unsigned int row, unsigned int channel = 0)
+	{
+		return *reinterpret_cast<T*>(get_unsafe(col, row, channel));
+	}
+
+	/** Returns a pointer to a given pixel, without checking for boundaries.
+	 *\sa The CImage::operator() which does check for coordinate limits.
+	 */
+	template <typename T>
+	const T* ptr(
+		unsigned int col, unsigned int row, unsigned int channel = 0) const
+	{
+		return reinterpret_cast<const T*>(get_unsafe(col, row, channel));
+	}
+	/** \overload Non-const case */
+	template <typename T>
+	T* ptr(unsigned int col, unsigned int row, unsigned int channel = 0)
+	{
+		return reinterpret_cast<T*>(get_unsafe(col, row, channel));
+	}
+
+	/** Returns a pointer to the first pixel of the given line. \sa ptr, at
+	 */
+	template <typename T>
+	const T* ptrLine(unsigned int row) const
+	{
+		return reinterpret_cast<const T*>(get_unsafe(0, row, 0));
+	}
+	/** \overload Non-const case */
+	template <typename T>
+	T* ptrLine(unsigned int row)
+	{
+		return reinterpret_cast<T*>(get_unsafe(0, row, 0));
+	}
 
 	/** Returns the contents of a given pixel at the desired channel, in float
 	 * format: [0,255]->[0,1]
@@ -634,11 +683,14 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * (default=-1=the last column)
 	 *  \param y_max The final "y" coordinate (inclusive) to extract
 	 * (default=-1=the last row)
-	 * \sa setFromMatrix
+	 * \param normalize_01 Normalize the image values such that they fall in the
+	 * range [0,1] (default: true). If set to false, the matrix will hold
+	 * numbers in the range [0,255]. \sa setFromMatrix
 	 */
 	void getAsMatrix(
 		mrpt::math::CMatrixFloat& outMatrix, bool doResize = true,
-		int x_min = 0, int y_min = 0, int x_max = -1, int y_max = -1) const;
+		int x_min = 0, int y_min = 0, int x_max = -1, int y_max = -1,
+		bool normalize_01 = true) const;
 
 	/**	Returns the image as RGB matrices with pixel values in the range [0,1].
 	 * Matrix indexes in this order: M(row,column)

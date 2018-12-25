@@ -374,8 +374,8 @@ unsigned char* CImage::operator()(
 			m_impl->img.channels()));
 	}
 #endif
-	auto ptr = (&m_impl->img.at<uint8_t>(row, col)) + channel;
-	return const_cast<unsigned char*>(ptr);
+	auto p = (&m_impl->img.at<uint8_t>(row, col)) + channel;
+	return const_cast<unsigned char*>(p);
 #if defined(_DEBUG) || (MRPT_ALWAYS_CHECKS_DEBUG)
 	MRPT_END
 #endif
@@ -385,13 +385,13 @@ unsigned char* CImage::operator()(
 #endif
 }
 
-unsigned char* CImage::get_unsafe(
-	unsigned int col, unsigned int row, unsigned int channel) const
+uint8_t* CImage::get_unsafe(
+	unsigned int col, unsigned int row, uint8_t channel) const
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
-	auto ptr = (&m_impl->img.at<uint8_t>(row, col)) + channel;
-	return const_cast<unsigned char*>(ptr);
+	auto p = (&m_impl->img.at<uint8_t>(row, col)) + channel;
+	return const_cast<uint8_t*>(p);
 #else
 	return nullptr;
 #endif
@@ -1140,7 +1140,7 @@ void CImage::normalize()
 
 void CImage::getAsMatrix(
 	CMatrixFloat& outMatrix, bool doResize, int x_min, int y_min, int x_max,
-	int y_max) const
+	int y_max, bool normalize_01) const
 {
 #if MRPT_HAS_OPENCV
 	MRPT_START
@@ -1169,9 +1169,10 @@ void CImage::getAsMatrix(
 			unsigned char* pixels = this->get_unsafe(x_min, y_min + y, 0);
 			for (int x = 0; x < lx; x++)
 			{
-				float aux = *pixels++ * 0.3f * (1.0f / 255);
-				aux += *pixels++ * 0.59f * (1.0f / 255);
-				aux += *pixels++ * 0.11f * (1.0f / 255);
+				float aux = *pixels++ * 0.3f;
+				aux += *pixels++ * 0.59f;
+				aux += *pixels++ * 0.11f;
+				if (normalize_01) aux *= (1.0f / 255);
 				outMatrix.coeffRef(y, x) = aux;
 			}
 		}
@@ -1182,7 +1183,11 @@ void CImage::getAsMatrix(
 		{
 			unsigned char* pixels = this->get_unsafe(x_min, y_min + y, 0);
 			for (int x = 0; x < lx; x++)
-				outMatrix.coeffRef(y, x) = (*pixels++) * (1.0f / 255);
+			{
+				float aux = (*pixels++);
+				if (normalize_01) aux *= (1.0f / 255);
+				outMatrix.coeffRef(y, x) = aux;
+			}
 		}
 	}
 
@@ -1848,11 +1853,11 @@ float CImage::KLT_response(
 		default:
 			for (unsigned int yy = min_y; yy <= max_y; yy++)
 			{
-				const uint8_t* ptr = img_data + widthStep * yy + min_x;
+				const uint8_t* p = img_data + widthStep * yy + min_x;
 				for (unsigned int xx = min_x; xx <= max_x; xx++)
 				{
-					const int32_t dx = ptr[+1] - ptr[-1];
-					const int32_t dy = ptr[+widthStep] - ptr[-widthStep];
+					const int32_t dx = p[+1] - p[-1];
+					const int32_t dy = p[+widthStep] - p[-widthStep];
 					gxx += dx * dx;
 					gxy += dx * dy;
 					gyy += dy * dy;
