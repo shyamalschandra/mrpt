@@ -77,8 +77,8 @@ TEST(CFileGZStreams, compareWithTestGZFiles)
 	for (int compress_level = 1; compress_level <= 9; compress_level++)
 	{
 		const std::string fil = mrpt::format(
-		    "%s/tests/gz-tests/%i.gz", mrpt::UNITTEST_BASEDIR.c_str(),
-		    compress_level);
+			"%s/tests/gz-tests/%i.gz", mrpt::UNITTEST_BASEDIR.c_str(),
+			compress_level);
 		if (!mrpt::system::fileExists(fil))
 		{
 			GTEST_FAIL() << "ERROR: test due to missing file: " << fil << "\n";

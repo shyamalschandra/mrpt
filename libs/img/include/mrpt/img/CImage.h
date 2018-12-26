@@ -296,31 +296,16 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 *  This method must support (x,y) values OUT of the actual image size
 	 * without neither
 	 *   raising exceptions, nor leading to memory access errors.
+	 * \sa at, ptr
 	 */
 	void setPixel(int x, int y, size_t color) override;
 
-	/** Draws a line.
-	 * \param x0 The starting point x coordinate
-	 * \param y0 The starting point y coordinate
-	 * \param x1 The end point x coordinate
-	 * \param y1 The end point y coordinate
-	 * \param color The color of the line
-	 * \param width The desired width of the line (this is IGNORED in this
-	 * virtual class)
-	 *  This method may be redefined in some classes implementing this
-	 * interface in a more appropiate manner.
-	 */
+	// See CCanvas docs
 	void line(
 		int x0, int y0, int x1, int y1, const mrpt::img::TColor color,
 		unsigned int width = 1, TPenStyle penStyle = psSolid) override;
 
-	/** Draws a circle of a given radius.
-	 * \param x The center - x coordinate in pixels.
-	 * \param y The center - y coordinate in pixels.
-	 * \param radius The radius - in pixels.
-	 * \param color The color of the circle.
-	 * \param width The desired width of the line
-	 */
+	// See CCanvas docs
 	void drawCircle(
 		int x, int y, int radius,
 		const mrpt::img::TColor& color = mrpt::img::TColor(255, 255, 255),
@@ -349,15 +334,15 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * \exception std::exception On odd size
 	 * \sa scaleHalf, scaleImage
 	 */
-	inline CImage scaleDouble() const
+	inline CImage scaleDouble(TInterpolationMethod interp) const
 	{
 		CImage ret;
-		this->scaleDouble(ret);
+		this->scaleDouble(ret, interp);
 		return ret;
 	}
 
 	//! \overload
-	void scaleDouble(CImage& out_image) const;
+	void scaleDouble(CImage& out_image, TInterpolationMethod interp) const;
 
 	/** Update a part of this image with the "patch" given as argument.
 	 * The "patch" will be "pasted" at the (col,row) coordinates of this image.
@@ -496,7 +481,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Copy, move & swap operations
 		@{ */
 	[[deprecated("Use makeShallowCopy() instead")]]  //
-	    inline void
+		inline void
 		setFromImageReadOnly(const CImage& o)
 	{
 		*this = o.makeShallowCopy();
@@ -532,9 +517,11 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	}
 
 	/** Makes a deep copy from the input img */
-	void loadFromIplImage(const IplImage* iplImage, copy_type_t c = DEEP_COPY);
+	[[deprecated("Prefer a ctor from a cv::Mat instead")]] void
+		loadFromIplImage(const IplImage* iplImage, copy_type_t c = DEEP_COPY);
 
-	inline void setFromIplImageReadOnly(IplImage* iplImage)
+	[[deprecated("Prefer a ctor from a cv::Mat instead")]] inline void
+		setFromIplImageReadOnly(IplImage* iplImage)
 	{
 		loadFromIplImage(iplImage, SHALLOW_COPY);
 	}
@@ -554,8 +541,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	  operator better, which checks the coordinates.
 	  \sa CImage::operator()
 	  */
-	uint8_t* get_unsafe(
-		unsigned int col, unsigned int row, uint8_t channel = 0) const;
+	[[deprecated("Use at<>(), ptr<>() or ptrLine() instead ")]] uint8_t*
+		get_unsafe(
+			unsigned int col, unsigned int row, uint8_t channel = 0) const;
 
 	/**  Access to pixels without checking boundaries, and doing a
 	 * reinterpret_cast<> of the data as the given type.
@@ -565,13 +553,13 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	const T& at(
 		unsigned int col, unsigned int row, unsigned int channel = 0) const
 	{
-		return *reinterpret_cast<const T*>(get_unsafe(col, row, channel));
+		return *reinterpret_cast<const T*>(internal_get(col, row, channel));
 	}
 	/** \overload Non-const case */
 	template <typename T>
 	T& at(unsigned int col, unsigned int row, unsigned int channel = 0)
 	{
-		return *reinterpret_cast<T*>(get_unsafe(col, row, channel));
+		return *reinterpret_cast<T*>(internal_get(col, row, channel));
 	}
 
 	/** Returns a pointer to a given pixel, without checking for boundaries.
@@ -581,13 +569,13 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	const T* ptr(
 		unsigned int col, unsigned int row, unsigned int channel = 0) const
 	{
-		return reinterpret_cast<const T*>(get_unsafe(col, row, channel));
+		return reinterpret_cast<const T*>(internal_get(col, row, channel));
 	}
 	/** \overload Non-const case */
 	template <typename T>
 	T* ptr(unsigned int col, unsigned int row, unsigned int channel = 0)
 	{
-		return reinterpret_cast<T*>(get_unsafe(col, row, channel));
+		return reinterpret_cast<T*>(internal_get(col, row, channel));
 	}
 
 	/** Returns a pointer to the first pixel of the given line. \sa ptr, at
@@ -595,13 +583,13 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	template <typename T>
 	const T* ptrLine(unsigned int row) const
 	{
-		return reinterpret_cast<const T*>(get_unsafe(0, row, 0));
+		return reinterpret_cast<const T*>(internal_get(0, row, 0));
 	}
 	/** \overload Non-const case */
 	template <typename T>
 	T* ptrLine(unsigned int row)
 	{
-		return reinterpret_cast<T*>(get_unsafe(0, row, 0));
+		return reinterpret_cast<T*>(internal_get(0, row, 0));
 	}
 
 	/** Returns the contents of a given pixel at the desired channel, in float
@@ -1020,6 +1008,6 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * loaded yet, load it.
 	 * \exception CExceptionExternalImageNotFound */
 	void makeSureImageIsLoaded() const;
-
+	uint8_t* internal_get(int col, int row, uint8_t channel = 0) const;
 };  // End of class
 }  // namespace mrpt::img

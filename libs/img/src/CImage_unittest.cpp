@@ -21,7 +21,7 @@ template class mrpt::CTraitsTest<mrpt::img::CImage>;
 
 using namespace std::string_literals;
 const auto tstImgFileColor =
-    mrpt::UNITTEST_BASEDIR + "/samples/img_basic_example/frame_color.jpg"s;
+	mrpt::UNITTEST_BASEDIR + "/samples/img_basic_example/frame_color.jpg"s;
 
 TEST(CImage, CtorDefault)
 {
@@ -168,6 +168,80 @@ TEST(CImage, ExternalImage)
 		// Test automatic load-on-the-fly:
 		EXPECT_EQ(a.getWidth(), 320U);
 		EXPECT_EQ(a.getHeight(), 240U);
+	}
+
+	{
+		CImage a;
+		a.setExternalStorage("./foo_61717181.png");
+		// Test exception on not found
+		EXPECT_THROW(a.getWidth(), mrpt::img::CExceptionExternalImageNotFound);
+	}
+}
+
+TEST(CImage, ConvertGray)
+{
+	using namespace mrpt::img;
+	{
+		CImage a;
+		bool load_ok = a.loadFromFile(tstImgFileColor);
+		EXPECT_TRUE(load_ok);
+
+		CImage b = a.grayscale();
+		EXPECT_EQ(b.getWidth(), a.getWidth());
+		EXPECT_EQ(b.getHeight(), a.getHeight());
+		EXPECT_FALSE(b.isColor());
+	}
+}
+
+TEST(CImage, CtorRefOrGray)
+{
+	using namespace mrpt::img;
+	{
+		CImage a;
+		bool load_ok = a.loadFromFile(tstImgFileColor);
+		EXPECT_TRUE(load_ok);
+
+		const CImage b(a, FAST_REF_OR_CONVERT_TO_GRAY);
+		EXPECT_EQ(b.getWidth(), a.getWidth());
+		EXPECT_EQ(b.getHeight(), a.getHeight());
+		EXPECT_FALSE(b.isColor());
+	}
+	{
+		CImage a(20, 10, CH_GRAY);
+		a.at<uint8_t>(1, 2) = 0x80;
+
+		const CImage b(a, FAST_REF_OR_CONVERT_TO_GRAY);
+		EXPECT_EQ(b.getWidth(), a.getWidth());
+		EXPECT_EQ(b.getHeight(), a.getHeight());
+		EXPECT_FALSE(b.isColor());
+		EXPECT_EQ(b.at<uint8_t>(1, 2), 0x80);
+	}
+}
+
+TEST(CImage, HalfAndDouble)
+{
+	using namespace mrpt::img;
+
+	CImage a(32, 10, CH_GRAY);
+	a.at<uint8_t>(0, 0) = 0x80;
+	a.at<uint8_t>(0, 1) = 0x80;
+	a.at<uint8_t>(1, 0) = 0x80;
+	a.at<uint8_t>(1, 1) = 0x80;
+
+	// Half:
+	{
+		const CImage imgH = a.scaleHalf(mrpt::img::IMG_INTERP_NN);
+		EXPECT_EQ(imgH.getWidth(), a.getWidth() / 2);
+		EXPECT_EQ(imgH.getHeight(), a.getHeight() / 2);
+		EXPECT_EQ(imgH.isColor(), a.isColor());
+		EXPECT_EQ(imgH.at<uint8_t>(0, 0), a.at<uint8_t>(0, 0));
+	}
+	// Double:
+	{
+		const CImage imgD = a.scaleDouble(mrpt::img::IMG_INTERP_NN);
+		EXPECT_EQ(imgD.getWidth(), a.getWidth() * 2);
+		EXPECT_EQ(imgD.getHeight(), a.getHeight() * 2);
+		EXPECT_EQ(imgD.isColor(), a.isColor());
 	}
 }
 

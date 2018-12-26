@@ -385,8 +385,7 @@ unsigned char* CImage::operator()(
 #endif
 }
 
-uint8_t* CImage::get_unsafe(
-	unsigned int col, unsigned int row, uint8_t channel) const
+uint8_t* CImage::internal_get(int col, int row, uint8_t channel) const
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
@@ -395,6 +394,12 @@ uint8_t* CImage::get_unsafe(
 #else
 	return nullptr;
 #endif
+}
+
+uint8_t* CImage::get_unsafe(
+	unsigned int col, unsigned int row, uint8_t channel) const
+{
+	return internal_get(col, row, channel);
 }
 
 uint8_t CImage::serializeGetVersion() const
@@ -862,7 +867,7 @@ CImage CImage::grayscale() const
 #if MRPT_HAS_OPENCV
 static void my_img_to_grayscale(const cv::Mat& src, cv::Mat& dest)
 {
-	dest = cv::Mat(src.cols, src.rows, CV_8UC1);
+	dest = cv::Mat(src.rows, src.cols, CV_8UC1);
 
 // If possible, use SSE optimized version:
 #if MRPT_HAS_SSE3
@@ -947,11 +952,11 @@ void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 #endif
 }
 
-void CImage::scaleDouble(CImage& out) const
+void CImage::scaleDouble(CImage& out, TInterpolationMethod interp) const
 {
 	out = *this;
 	const TImageSize siz = this->getSize();
-	out.scaleImage(out, siz.x * 2, siz.y * 2);
+	out.scaleImage(out, siz.x * 2, siz.y * 2, interp);
 }
 
 void CImage::loadFromMemoryBuffer(
@@ -1166,7 +1171,7 @@ void CImage::getAsMatrix(
 		// Luminance: Y = 0.3R + 0.59G + 0.11B
 		for (int y = 0; y < ly; y++)
 		{
-			unsigned char* pixels = this->get_unsafe(x_min, y_min + y, 0);
+			const uint8_t* pixels = ptr<uint8_t>(x_min, y_min + y);
 			for (int x = 0; x < lx; x++)
 			{
 				float aux = *pixels++ * 0.3f;
@@ -1181,7 +1186,7 @@ void CImage::getAsMatrix(
 	{
 		for (int y = 0; y < ly; y++)
 		{
-			unsigned char* pixels = this->get_unsafe(x_min, y_min + y, 0);
+			const uint8_t* pixels = ptr<uint8_t>(x_min, y_min + y);
 			for (int x = 0; x < lx; x++)
 			{
 				float aux = (*pixels++);
@@ -1224,11 +1229,10 @@ void CImage::getAsRGBMatrices(
 	{
 		for (int y = 0; y < ly; y++)
 		{
-			unsigned char* pixels = this->get_unsafe(x_min, y_min + y, 0);
-			float aux;
+			const uint8_t* pixels = ptr<uint8_t>(x_min, y_min + y);
 			for (int x = 0; x < lx; x++)
 			{
-				aux = *pixels++ * (1.0f / 255);
+				float aux = *pixels++ * (1.0f / 255);
 				R.coeffRef(y, x) = aux;
 				aux = *pixels++ * (1.0f / 255);
 				G.coeffRef(y, x) = aux;
@@ -1241,7 +1245,7 @@ void CImage::getAsRGBMatrices(
 	{
 		for (int y = 0; y < ly; y++)
 		{
-			unsigned char* pixels = this->get_unsafe(x_min, y_min + y, 0);
+			const uint8_t* pixels = ptr<uint8_t>(x_min, y_min + y);
 			for (int x = 0; x < lx; x++)
 			{
 				R.coeffRef(y, x) = (*pixels) * (1.0f / 255);
