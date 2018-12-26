@@ -616,9 +616,8 @@ void load_textures(
 			// Prepare image data types:
 			const GLenum img_type = GL_UNSIGNED_BYTE;
 			const int nBytesPerPixel = img_rgb->isColor() ? 3 : 1;
-			const bool is_RGB_order = (!::strcmp(
-				img_rgb->getChannelsOrder(),
-				"RGB"));  // Reverse RGB <-> BGR order?
+			// Reverse RGB <-> BGR order?
+			const bool is_RGB_order = (img_rgb->getChannelsOrder() == "RGB");
 			const GLenum img_format = nBytesPerPixel == 3
 										  ? (is_RGB_order ? GL_RGB : GL_BGR)
 										  : GL_LUMINANCE;

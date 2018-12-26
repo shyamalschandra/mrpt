@@ -244,5 +244,19 @@ TEST(CImage, HalfAndDouble)
 		EXPECT_EQ(imgD.isColor(), a.isColor());
 	}
 }
+TEST(CImage, getChannelsOrder)
+{
+	using namespace mrpt::img;
+	{
+		CImage a;
+		bool load_ok = a.loadFromFile(tstImgFileColor);
+		EXPECT_TRUE(load_ok);
+		EXPECT_EQ(std::string("BGR"), a.getChannelsOrder());
+	}
+	{
+		CImage a(32, 10, CH_GRAY);
+		EXPECT_EQ(std::string("GRAY"), a.getChannelsOrder());
+	}
+}
 
 #endif  // MRPT_HAS_OPENCV

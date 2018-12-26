@@ -765,6 +765,17 @@ size_t CImage::getWidth() const
 #endif
 }
 
+std::string CImage::getChannelsOrder() const
+{
+#if MRPT_HAS_OPENCV
+	makeSureImageIsLoaded();  // For delayed loaded images stored externally
+	IplImage ipl(m_impl->img);
+	return std::string(ipl.channelSeq);
+#else
+	return 0;
+#endif
+}
+
 size_t CImage::getRowStride() const
 {
 #if MRPT_HAS_OPENCV

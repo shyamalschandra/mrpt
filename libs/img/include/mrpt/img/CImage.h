@@ -646,6 +646,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * \sa getSize, get_unsafe */
 	size_t getRowStride() const;
 
+	/** As of mrpt 2.0.0, this returns either "GRAY" or "BGR". */
+	std::string getChannelsOrder() const;
+
 	/** Return the maximum pixel value of the image, as a float value in the
 	 * range [0,1]
 	 * \sa getAsFloat */
