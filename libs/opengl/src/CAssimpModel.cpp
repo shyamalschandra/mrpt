@@ -629,7 +629,7 @@ void load_textures(
 			glTexImage2D(
 				GL_TEXTURE_2D, 0 /*level*/, 3 /* RGB components */, width,
 				height, 0 /*border*/, img_format, img_type,
-				img_rgb->get_unsafe(0, 0));
+				img_rgb->ptrLine<uint8_t>(0));
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);  // Reset
 		}
 		else

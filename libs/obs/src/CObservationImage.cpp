@@ -25,16 +25,6 @@ using namespace mrpt::img;
 // This must be added to any CSerializable class implementation file.
 IMPLEMENTS_SERIALIZABLE(CObservationImage, CObservation, mrpt::obs)
 
-#if MRPT_HAS_OPENCV
-/** Constructor
- */
-CObservationImage::CObservationImage(const IplImage* iplImage)
-	: cameraPose(), image(iplImage)
-{
-}
-
-#endif
-
 uint8_t CObservationImage::serializeGetVersion() const { return 4; }
 void CObservationImage::serializeTo(mrpt::serialization::CArchive& out) const
 {

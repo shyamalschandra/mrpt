@@ -42,9 +42,6 @@ class CObservationImage : public CObservation
 	 *
 	 */
 	CObservationImage() = default;
-#ifdef MRPT_HAS_OPENCV
-	CObservationImage(const IplImage* ipl);
-#endif
 	/** The pose of the camera on the robot
 	 */
 	mrpt::poses::CPose3D cameraPose;
