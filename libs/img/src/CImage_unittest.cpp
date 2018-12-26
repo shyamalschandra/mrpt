@@ -12,14 +12,24 @@
 #include <mrpt/math/CMatrixTemplateNumeric.h>
 #include <CTraitsTest.h>
 #include <gtest/gtest.h>
+#include <test_mrpt_common.h>
+
+// Universal include for all versions of OpenCV
+#include <mrpt/otherlibs/do_opencv_includes.h>
 
 template class mrpt::CTraitsTest<mrpt::img::CImage>;
+
+using namespace std::string_literals;
+const auto tstImgFileColor =
+    mrpt::UNITTEST_BASEDIR + "/samples/img_basic_example/frame_color.jpg"s;
 
 TEST(CImage, CtorDefault)
 {
 	mrpt::img::CImage img;
 	EXPECT_THROW(img.getWidth(), std::exception);
 }
+
+#if MRPT_HAS_OPENCV
 
 TEST(CImage, CtorSized)
 {
@@ -98,6 +108,25 @@ TEST(CImage, CopyMoveSwap)
 	{
 		CImage a(20, 10, CH_GRAY);
 		a.at<uint8_t>(1, 2) = 0x80;
+		// Shallow copy ctor:
+		CImage b(a, mrpt::img::SHALLOW_COPY);
+		EXPECT_EQ(b.at<uint8_t>(1, 2), 0x80);
+
+		a.at<uint8_t>(1, 3) = 0x81;
+		EXPECT_EQ(b.at<uint8_t>(1, 3), 0x81);
+
+		// Deep copy ctor:
+		CImage c(a, mrpt::img::DEEP_COPY);
+		EXPECT_EQ(c.at<uint8_t>(1, 2), 0x80);
+
+		c.at<uint8_t>(1, 3) = 0x0;
+		a.at<uint8_t>(1, 3) = 0x81;
+		EXPECT_NE(c.at<uint8_t>(1, 3), 0x81);
+	}
+
+	{
+		CImage a(20, 10, CH_GRAY);
+		a.at<uint8_t>(1, 2) = 0x80;
 		// Deep copy:
 		CImage b = a.makeDeepCopy();
 		EXPECT_EQ(b.at<uint8_t>(1, 2), 0x80);
@@ -118,4 +147,28 @@ TEST(CImage, CopyMoveSwap)
 		EXPECT_EQ(b.getHeight(), 10U);
 		EXPECT_EQ(b.at<uint8_t>(1, 2), 0x80);
 	}
+
+	{
+		CImage a(20, 10, CH_GRAY), b;
+		a.at<uint8_t>(1, 2) = 0x80;
+		// swap:
+		a.swap(b);
+		EXPECT_EQ(b.getWidth(), 20U);
+		EXPECT_EQ(b.getHeight(), 10U);
+		EXPECT_EQ(b.at<uint8_t>(1, 2), 0x80);
+	}
 }
+
+TEST(CImage, ExternalImage)
+{
+	using namespace mrpt::img;
+	{
+		CImage a;
+		a.setExternalStorage(tstImgFileColor);
+		// Test automatic load-on-the-fly:
+		EXPECT_EQ(a.getWidth(), 320U);
+		EXPECT_EQ(a.getHeight(), 240U);
+	}
+}
+
+#endif  // MRPT_HAS_OPENCV

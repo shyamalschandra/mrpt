@@ -8,16 +8,11 @@
    +---------------------------------------------------------------------------+
  */
 
-#include <gtest/gtest.h>
-#include <test_mrpt_common.h>
+#pragma once
 
-std::string mrpt::UNITTEST_BASEDIR = CMAKE_UNITTEST_BASEDIR;
+#include <string>
 
-int main(int argc, char** argv)
+namespace mrpt
 {
-	testing::InitGoogleTest(&argc, argv);
-
-	if (argc > 1) mrpt::UNITTEST_BASEDIR = std::string(argv[1]);
-
-	return RUN_ALL_TESTS();
+    extern std::string UNITTEST_BASEDIR;
 }

@@ -19,7 +19,7 @@ if (UNIX)
 endif()
 
 
-add_definitions(-DCMAKE_MRPT_GLOBAL_UNITTEST_SRC_DIR="${MRPT_SOURCE_DIR}")
+add_definitions(-DCMAKE_UNITTEST_BASEDIR="${MRPT_SOURCE_DIR}")
 
 # Allow tests to include sources from examples directory:
 include_directories("${MRPT_SOURCE_DIR}")

@@ -103,33 +103,35 @@ class CExceptionExternalImageNotFound : public std::runtime_error
  * Additional notes:
  * - The OpenCV `cv::Mat` format is used internally for compatibility with
  * all OpenCV functions. Use CImage::asCvMat() to retrieve it. Example:
- *         \code
- *            CImage  img;
- *            ...
- *            // Call to OpenCV function expecting an "IplImage *" or a "void*
- *arr":
- *            cv::Mat cvImg = cv::cvarrToMat( img.getAs<IplImage>() );
- *            cvFunction( img.getAs<IplImage>(), ... );
- *         \endcode
- *		- Only the unsigned 8-bit storage format for pixels (on each channel) is
- *supported.
- *		- An external storage mode can be enabled by calling
+ * \code
+ * CImage  img;
+ * ...
+ * cv::Mat m = img.asCvMat()
+ * \endcode
+ * - By default, all images use unsigned 8-bit storage format for pixels (on
+ *each channel), but it can be changed by flags in the constructor.
+ * - An **external storage mode** can be enabled by calling
  *CImage::setExternalStorage, useful for storing large collections of image
  *objects in memory while loading the image data itself only for the relevant
- *images at any time.
- *		- Operator = and copy ctor makes shallow copies. For deep copies, see
- *clone() or CImage(const CImage&, copy_type_t)
- *		- If you are interested in a smart pointer to an image, use:
+ *images at any time. See CImage::forceLoad() and CImage::unload().
+ * - Operator = and copy ctor make shallow copies. For deep copies, see
+ * CImage::makeDeepCopy() or CImage(const CImage&, copy_type_t), e.g:
  * \code
- * CImage::Ptr myImg = CImage::Create();
+ * CImage a(20, 10, CH_GRAY);
+ * // Shallow copy ctor:
+ * CImage b(a, mrpt::img::SHALLOW_COPY);
+ * CImage c(a, mrpt::img::DEEP_COPY);
+ * \endcode
+ * - If you are interested in a smart pointer to an image, use:
+ * \code
+ * CImage::Ptr myImg = CImage::Create(); // optional ctor arguments
  * // or:
  * CImage::Ptr myImg = std::make_shared<CImage>(...);
  *  \endcode
+ * - To set a CImage from an OpenCV `cv::Mat` use
+ *CImage::CImage(cv::Mat,copy_type_t).
  *
- * - To set a CImage from an OpenCV `cv::Mat` use:
- *  - CImage::CImage(cv::Mat,copy_type_t)
- *
- *   Some functions are implemented in MRPT with highly optimized SSE2/SSE3
+ * Some functions are implemented in MRPT with highly optimized SSE2/SSE3
  *routines, in suitable platforms and compilers. To see the list of
  * optimizations refer to \ref sse_optimizations, falling back to default OpenCV
  *methods where unavailable.
@@ -494,7 +496,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Copy, move & swap operations
 		@{ */
 	[[deprecated("Use makeShallowCopy() instead")]]  //
-	inline void
+	    inline void
 		setFromImageReadOnly(const CImage& o)
 	{
 		*this = o.makeShallowCopy();
