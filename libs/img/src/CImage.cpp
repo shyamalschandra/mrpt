@@ -273,7 +273,7 @@ bool CImage::saveToFile(const std::string& fileName, int jpeg_quality) const
 	MRPT_END
 }
 
-void CImage::loadFromIplImage(const IplImage* iplImage, copy_type_t c)
+void CImage::internal_fromIPL(const IplImage* iplImage, copy_type_t c)
 {
 	MRPT_START
 #if MRPT_HAS_OPENCV

@@ -517,13 +517,16 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	}
 
 	/** Makes a deep copy from the input img */
-	[[deprecated("Prefer a ctor from a cv::Mat instead")]] void
-		loadFromIplImage(const IplImage* iplImage, copy_type_t c = DEEP_COPY);
+	[[deprecated("Prefer a ctor from a cv::Mat instead")]] inline void
+		loadFromIplImage(const IplImage* iplImage, copy_type_t c = DEEP_COPY)
+	{
+		internal_fromIPL(iplImage, c);
+	}
 
 	[[deprecated("Prefer a ctor from a cv::Mat instead")]] inline void
 		setFromIplImageReadOnly(IplImage* iplImage)
 	{
-		loadFromIplImage(iplImage, SHALLOW_COPY);
+		internal_fromIPL(iplImage, SHALLOW_COPY);
 	}
 
 	/** Efficiently swap of two images */
@@ -1009,5 +1012,6 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * \exception CExceptionExternalImageNotFound */
 	void makeSureImageIsLoaded() const;
 	uint8_t* internal_get(int col, int row, uint8_t channel = 0) const;
+	void internal_fromIPL(const IplImage* iplImage, copy_type_t c);
 };  // End of class
 }  // namespace mrpt::img
