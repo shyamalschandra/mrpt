@@ -540,6 +540,14 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** Makes a shallow or deep copy of this image into the provided cv::Mat */
 	void asCvMat(cv::Mat& out_img, copy_type_t copy_type) const;
 
+	template <typename CV_MAT>
+	CV_MAT asCvMat(copy_type_t copy_type) const
+	{
+		CV_MAT ret;
+		asCvMat(ret, copy_type);
+		return ret;
+	}
+
 	/**  Access to pixels without checking boundaries - Use normally the ()
 	  operator better, which checks the coordinates.
 	  \sa CImage::operator()
@@ -972,21 +980,22 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Color/Grayscale conversion
 		@{ */
 
-	/** Returns a grayscale version of the image, or itself if it is already a
-	 * grayscale image.
+	/** Returns a grayscale version of the image, or a shallow copy of itself if
+	 * it is already a grayscale image.
 	 */
 	CImage grayscale() const;
 
-	/** Returns a grayscale version of the image, or itself if it is already a
-	 * grayscale image. In-place is supported by setting `ret=*this`.
-	 * \sa colorImage
-	 */
+	/** \overload.
+	 * In-place is supported by setting `ret=*this`. */
 	void grayscale(CImage& ret) const;
 
-	/** Returns a RGB version of the grayscale image, or itself if it is already
-	 * a RGB image. In-place is supported by setting `ret=*this`.
-	 * \sa grayscale
+	/** Returns a color (RGB) version of the grayscale image, or a shallow copy
+	 * of itself if it is already a color image. \sa grayscale
 	 */
+	CImage colorImage() const;
+
+	/** \overload.
+	 * In-place is supported by setting `ret=*this`. */
 	void colorImage(CImage& ret) const;
 
 	/** @} */

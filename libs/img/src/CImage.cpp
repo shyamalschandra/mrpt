@@ -1547,8 +1547,10 @@ void CImage::filterMedian(CImage& out_img, int W) const
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
 
-	auto& srcImg = const_cast<cv::Mat&>(m_impl->img);
-	if (this != &out_img)
+	auto srcImg = const_cast<cv::Mat&>(m_impl->img);
+	if (this == &out_img)
+		srcImg = srcImg.clone();
+	else
 		out_img.resize(srcImg.cols, srcImg.rows, getChannelCount());
 
 	cv::medianBlur(srcImg, out_img.m_impl->img, W);
@@ -1559,8 +1561,10 @@ void CImage::filterGaussian(CImage& out_img, int W, int H, double sigma) const
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
-	auto& srcImg = const_cast<cv::Mat&>(m_impl->img);
-	if (this != &out_img)
+	auto srcImg = const_cast<cv::Mat&>(m_impl->img);
+	if (this == &out_img)
+		srcImg = srcImg.clone();
+	else
 		out_img.resize(srcImg.cols, srcImg.rows, getChannelCount());
 
 	cv::GaussianBlur(srcImg, out_img.m_impl->img, cv::Size(W, H), sigma);
@@ -1686,9 +1690,13 @@ bool CImage::drawChessboardCorners(
 #endif
 }
 
-/** Replaces this grayscale image with a RGB version of it.
- * \sa grayscaleInPlace
- */
+CImage CImage::colorImage() const
+{
+	CImage ret;
+	colorImage(ret);
+	return ret;
+}
+
 void CImage::colorImage(CImage& ret) const
 {
 #if MRPT_HAS_OPENCV

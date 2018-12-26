@@ -116,9 +116,9 @@ mxArray* CObservationImage::writeToMatlab() const
 #endif
 }
 
-void CObservationImage::getRectifiedImage(CImage& out_img) const
+void CObservationImage::getUndistortedImage(CImage& out_img) const
 {
-	image.rectifyImage(out_img, cameraParams);
+	image.undistort(out_img, cameraParams);
 }
 
 void CObservationImage::getDescriptionAsText(std::ostream& o) const

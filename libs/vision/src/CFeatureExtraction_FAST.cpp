@@ -47,7 +47,7 @@ void CFeatureExtraction::extractFeaturesFAST(
 	//  It's better to use an adaptive threshold, controlled from our caller
 	//  outside.
 
-	const Mat theImg = cvarrToMat(inImg_gray.getAs<IplImage>());
+	const Mat theImg = inImg_gray.asCvMat<cv::Mat>(SHALLOW_COPY);
 
 	cv::Mat cvMask;
 	if (options.useMask)
