@@ -41,10 +41,10 @@ wxImage* mrpt::gui::MRPTImage2wxImage(const mrpt::img::CImage& img)
 		new_image.getWidth() *
 		(new_image.getChannelCount() == mrpt::img::CH_RGB ? 3 : 1);
 	uint8_t* data =
-	    static_cast<uint8_t*>(malloc(row_in_bytes * new_image.getHeight());
+		static_cast<uint8_t*>(malloc(row_in_bytes * new_image.getHeight()));
 
 	const int w = new_image.getWidth(), h = new_image.getHeight(),
-	          rs = new_image.getRowStride();
+			  rs = new_image.getRowStride();
 
 	// Copy row by row only if necesary:
 	if (row_in_bytes != rs)
@@ -67,7 +67,10 @@ wxImage* mrpt::gui::MRPTImage2wxImage(const mrpt::img::CImage& img)
 wxBitmap* mrpt::gui::MRPTImage2wxBitmap(const mrpt::img::CImage& img)
 {
 #if MRPT_HAS_OPENCV
-	return new wxBitmap(MRPTImage2wxImage(img));
+	auto* i = MRPTImage2wxImage(img);
+	auto ret = new wxBitmap(*i);
+	delete i;
+	return ret;
 #else
 	THROW_EXCEPTION("MRPT compiled without OpenCV");
 #endif

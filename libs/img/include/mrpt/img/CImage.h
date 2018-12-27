@@ -43,6 +43,7 @@ enum class PixelDepth : int32_t
  *  Used for OpenCV related operations with images, but also with MRPT native
  * classes.
  * \sa mrpt::img::CMappedImage, CImage::scaleImage
+ * \note These are numerically compatible to cv::InterpolationFlags
  * \ingroup mrpt_img_grp
  */
 enum TInterpolationMethod
@@ -265,7 +266,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * \sa scaleImage
 	 */
 	void resize(
-		unsigned int width, unsigned int height, TImageChannels nChannels,
+		std::size_t width, std::size_t height, TImageChannels nChannels,
 		PixelDepth depth = PixelDepth::D8U);
 
 	PixelDepth getPixelDepth() const;
@@ -650,8 +651,8 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 
 	/** Returns the row stride of the image: this is the number of *bytes*
 	 * between two consecutive rows. You can access the pointer to the first row
-	 * with get_unsafe(0,0)
-	 * \sa getSize, get_unsafe */
+	 * with ptrLine(0)
+	 * \sa getSize, as, ptr, ptrLine */
 	size_t getRowStride() const;
 
 	/** As of mrpt 2.0.0, this returns either "GRAY" or "BGR". */
@@ -836,20 +837,18 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		{  // Matrix: [0,1]
 			for (unsigned int y = 0; y < ly; y++)
 			{
-				unsigned char* pixels = this->get_unsafe(0, y, 0);
+				auto* pixels = ptrLine<uint8_t>(y);
 				for (unsigned int x = 0; x < lx; x++)
-					(*pixels++) =
-						static_cast<unsigned char>(m.get_unsafe(y, x) * 255);
+					(*pixels++) = static_cast<uint8_t>(m.coeff(y, x) * 255);
 			}
 		}
 		else
 		{  // Matrix: [0,255]
 			for (unsigned int y = 0; y < ly; y++)
 			{
-				unsigned char* pixels = this->get_unsafe(0, y, 0);
+				auto* pixels = ptrLine<uint8_t>(y);
 				for (unsigned int x = 0; x < lx; x++)
-					(*pixels++) =
-						static_cast<unsigned char>(m.get_unsafe(y, x));
+					(*pixels++) = static_cast<uint8_t>(m.coeff(y, x));
 			}
 		}
 		MRPT_END
@@ -876,7 +875,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		{  // Matrix: [0,1]
 			for (unsigned int y = 0; y < ly; y++)
 			{
-				unsigned char* pixels = this->get_unsafe(0, y, 0);
+				auto* pixels = ptrLine<uint8_t>(y);
 				for (unsigned int x = 0; x < lx; x++)
 				{
 					(*pixels++) = static_cast<uint8_t>(r.coeff(y, x) * 255);
@@ -889,7 +888,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		{  // Matrix: [0,255]
 			for (unsigned int y = 0; y < ly; y++)
 			{
-				unsigned char* pixels = this->get_unsafe(0, y, 0);
+				auto* pixels = ptrLine<uint8_t>(y);
 				for (unsigned int x = 0; x < lx; x++)
 				{
 					(*pixels++) = static_cast<uint8_t>(r.coeff(y, x));

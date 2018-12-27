@@ -180,7 +180,7 @@ CImage CImage::makeDeepCopy() const
 }
 
 void CImage::resize(
-	unsigned int width, unsigned int height, TImageChannels nChannels,
+	std::size_t width, std::size_t height, TImageChannels nChannels,
 	PixelDepth depth)
 {
 	MRPT_START

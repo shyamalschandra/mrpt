@@ -67,21 +67,20 @@ void CUndistortMap::undistort(
 			"Error: setFromCamParams() must be called prior to undistort().")
 
 #if MRPT_HAS_OPENCV
-	CvMat mapx = cvMat(
+	using namespace cv;
+	Mat mapx(
 		m_camera_params.nrows, m_camera_params.ncols, CV_16SC2,
-		const_cast<int16_t*>(
-			&m_dat_mapx[0]));  // Wrappers on the data as a CvMat's.
-	CvMat mapy = cvMat(
+		const_cast<int16_t*>(&m_dat_mapx[0]));
+	Mat mapy(
 		m_camera_params.nrows, m_camera_params.ncols, CV_16UC1,
 		const_cast<uint16_t*>(&m_dat_mapy[0]));
 
-	const auto* srcImg = in_img.getAs<IplImage>();  // Source Image
-	IplImage* outImg =
-		cvCreateImage(cvGetSize(srcImg), srcImg->depth, srcImg->nChannels);
-	cvRemap(srcImg, outImg, &mapx, &mapy);  // cv::remap(src, dst_part,
-	// map1_part, map2_part,
-	// INTER_LINEAR, BORDER_CONSTANT );
-	out_img.setFromIplImage(outImg);
+	out_img.resize(
+		in_img.getWidth(), in_img.getHeight(), in_img.getChannelCount());
+
+	cv::remap(
+		in_img.asCvMat<Mat>(SHALLOW_COPY), out_img.asCvMat<Mat>(SHALLOW_COPY),
+		mapx, mapy, INTER_LINEAR);
 #endif
 	MRPT_END
 }

@@ -22,13 +22,13 @@ using std::vector;
 // Prototypes of functions exported from "vision/src/faster/*" to
 // "vision/src/*":
 void fast_corner_detect_9(
-	const IplImage* I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
+	const cv::Mat& I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
 	std::vector<size_t>* out_feats_index_by_row);
 void fast_corner_detect_10(
-	const IplImage* I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
+	const cv::Mat& I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
 	std::vector<size_t>* out_feats_index_by_row);
 void fast_corner_detect_12(
-	const IplImage* I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
+	const cv::Mat& I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
 	std::vector<size_t>* out_feats_index_by_row);
 
 #endif
