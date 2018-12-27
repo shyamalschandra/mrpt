@@ -468,7 +468,7 @@ void CImage::serializeTo(mrpt::serialization::CArchive& out) const
 				// Version 3: ZIP compression!
 				// Version 4: Skip zip if the image size <= 16Kb
 				int32_t origin = 0;  // not used mrpt v1.9.9
-				uint32_t imageSize = width * height * m_impl->img.step[0];
+				uint32_t imageSize = height * m_impl->img.step[0];
 				// Version 10: depth
 				int32_t depth = m_impl->img.depth();
 
@@ -1510,7 +1510,9 @@ void CImage::flipVertical()
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();
-	cv::flip(m_impl->img, m_impl->img, 0 /* x-axis */);
+	cv::Mat m;
+	cv::flip(m_impl->img, m, 0 /* x-axis */);
+	m_impl->img = m;
 #endif
 }
 
@@ -1518,7 +1520,9 @@ void CImage::flipHorizontal()
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();
-	cv::flip(m_impl->img, m_impl->img, 1 /* y-axis */);
+	cv::Mat m;
+	cv::flip(m_impl->img, m, 1 /* y-axis */);
+	m_impl->img = m;
 #endif
 }
 
@@ -1526,7 +1530,9 @@ void CImage::swapRB()
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
-	cv::cvtColor(m_impl->img, m_impl->img, cv::COLOR_RGB2BGR);
+	cv::Mat m;
+	cv::cvtColor(m_impl->img, m, cv::COLOR_RGB2BGR);
+	m_impl->img = m;
 #endif
 }
 
