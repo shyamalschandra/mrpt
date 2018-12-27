@@ -1510,9 +1510,7 @@ void CImage::flipVertical()
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();
-	cv::Mat m;
-	cv::flip(m_impl->img, m, 0 /* x-axis */);
-	m_impl->img = m;
+	cv::flip(m_impl->img, m_impl->img, 0 /* x-axis */);
 #endif
 }
 
@@ -1520,9 +1518,7 @@ void CImage::flipHorizontal()
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();
-	cv::Mat m;
-	cv::flip(m_impl->img, m, 1 /* y-axis */);
-	m_impl->img = m;
+	cv::flip(m_impl->img, m_impl->img, 1 /* y-axis */);
 #endif
 }
 
@@ -1530,9 +1526,7 @@ void CImage::swapRB()
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
-	cv::Mat m;
-	cv::cvtColor(m_impl->img, m, cv::COLOR_RGB2BGR);
-	m_impl->img = m;
+	cv::cvtColor(m_impl->img, m_impl->img, cv::COLOR_RGB2BGR);
 #endif
 }
 
@@ -1559,6 +1553,10 @@ void CImage::undistort(
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
+
+	ASSERTMSG_(
+		out_img.m_impl->img.data != m_impl->img.data,
+		"In-place undistort() not supported");
 
 	auto& srcImg = const_cast<cv::Mat&>(m_impl->img);
 	// This will avoid re-alloc if size already matches.

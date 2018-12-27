@@ -362,12 +362,12 @@ bool DemoFeatures()
 
 				while (auxImg1.getWidth() < 100 && auxImg1.getHeight() < 100)
 					auxImg1.scaleImage(
-						auxImg1.getWidth() * 2, auxImg1.getHeight() * 2,
-						IMG_INTERP_NN);
+						auxImg1, auxImg1.getWidth() * 2,
+						auxImg1.getHeight() * 2, IMG_INTERP_NN);
 				while (auxImg2.getWidth() < 100 && auxImg2.getHeight() < 100)
 					auxImg2.scaleImage(
-						auxImg2.getWidth() * 2, auxImg2.getHeight() * 2,
-						IMG_INTERP_NN);
+						auxImg2, auxImg2.getWidth() * 2,
+						auxImg2.getHeight() * 2, IMG_INTERP_NN);
 				winptr2D_descr1->showImage(auxImg1);
 				winptr2D_descr2->showImage(auxImg2);
 			}
@@ -412,8 +412,6 @@ bool DemoFeatures()
 			{
 				img2_show_base.cross(
 					feats2[i2]->x, feats2[i2]->y, TColor::red(), '+', 7);
-				// img2_show.drawCircle(feats2[i2]->x,feats2[i2]->y,7,
-				// TColor::blue );
 
 				img2_show_base.textOut(
 					feats2[i2]->x + 10, feats2[i2]->y - 10,

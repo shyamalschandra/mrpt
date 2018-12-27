@@ -450,7 +450,7 @@ void xRawLogViewerFrame::SelectObjectInTreeView(
 					if (obs->hasIntensityImage)
 						im = obs->intensityImage;
 					else
-						im.resize(10, 10, CH_GRAY, true);
+						im.resize(10, 10, CH_GRAY);
 					wxImage* img = mrpt::gui::MRPTImage2wxImage(im);
 					if (img->IsOk()) bmp3Dobs_int->SetBitmap(wxBitmap(*img));
 					bmp3Dobs_int->Refresh();
@@ -473,7 +473,7 @@ void xRawLogViewerFrame::SelectObjectInTreeView(
 							false /* it's in range [0,255] */);
 					}
 					else
-						auxImg.resize(10, 10, CH_GRAY, true);
+						auxImg.resize(10, 10, CH_GRAY);
 
 					wxImage* img = mrpt::gui::MRPTImage2wxImage(auxImg);
 					if (img->IsOk()) bmp3Dobs_depth->SetBitmap(wxBitmap(*img));

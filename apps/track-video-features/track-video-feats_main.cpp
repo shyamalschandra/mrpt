@@ -224,9 +224,9 @@ int DoTrackingDemo(CCameraSensor::Ptr cam, bool DO_SAVE_VIDEO)
 		//  for the display
 		// ----------------------------------------------------------------
 		if (DO_HIST_EQUALIZE_IN_GRAYSCALE && !theImg.isColor())
-			theImg.equalizeHistInPlace();
+			theImg.equalizeHist(theImg);
 		// Convert to color so we can draw color marks, etc.
-		theImg.colorImageInPlace();
+		theImg = theImg.colorImage();
 
 		double extra_tim_to_wait = 0;
 

@@ -35,7 +35,12 @@ wxImage* mrpt::gui::MRPTImage2wxImage(const mrpt::img::CImage& img)
 		new_image = new_image.colorImage();
 	}
 
-	if (new_image.getChannelsOrder() == "BGR"s) new_image.swapRB();
+	if (new_image.getChannelsOrder() == "BGR"s)
+	{
+		auto im = new_image.makeDeepCopy();
+		im.swapRB();
+		new_image = im;
+	}
 
 	const int row_in_bytes =
 		new_image.getWidth() *

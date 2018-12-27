@@ -169,7 +169,7 @@ double feature_extraction_test_FAST(int N, int h)
 	fExt.options.FASTOptions.threshold = 20;
 	fExt.options.patchSize = 0;
 
-	img.grayscaleInPlace();
+	img = img.grayscale();
 
 	tictac.Tic();
 	for (int i = 0; i < N; i++) fExt.detectFeatures(img, featsFAST);
@@ -187,8 +187,8 @@ double feature_extraction_test_FAST(int N, int h)
 	{                                                                       \
 		CImage img;                                                         \
 		getTestImage(0, img);                                               \
-		img.grayscaleInPlace();                                             \
-		img.scaleImage(W, H);                                               \
+		img = img.grayscale();                                              \
+		img.scaleImage(img, W, H, mrpt::img::IMG_INTERP_LINEAR);            \
 		TSimpleFeatureList corners;                                         \
 		const int threshold = 20;                                           \
 		std::vector<size_t> feats_index_by_row;                             \
@@ -254,12 +254,11 @@ double feature_extraction_test_FASTER(int N, int threshold)
 	CFeatureExtraction fExt;
 	CFeatureList feats;
 
-	fExt.options.featsType = TYP;  // FASTER_N==9 ? featFASTER9 : (FASTER_N==10
-	// ? featFASTER10 : featFASTER12 );
-	fExt.options.FASTOptions.threshold = threshold;  // 20;
+	fExt.options.featsType = TYP;
+	fExt.options.FASTOptions.threshold = threshold;
 	fExt.options.patchSize = 0;
 
-	img.grayscaleInPlace();
+	img = img.grayscale();
 
 	tictac.Tic();
 	for (int i = 0; i < N; i++) fExt.detectFeatures(img, feats, 0, MAX_N_FEATS);
