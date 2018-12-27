@@ -51,8 +51,8 @@ void buildPyramid_templ(
 	// Rest of octaves, if any:
 	for (size_t o = 1; o < nOctaves; o++)
 	{
-		obj.images[o] = obj.images[o - 1].scaleHalf(
-			smooth_halves ? IMG_INTERP_LINEAR : IMG_INTERP_NN);
+		obj.images[o - 1].scaleHalf(
+			obj.images[o], smooth_halves ? IMG_INTERP_LINEAR : IMG_INTERP_NN);
 	}
 }
 

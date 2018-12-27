@@ -179,6 +179,32 @@ CImage CImage::makeDeepCopy() const
 #endif
 }
 
+void CImage::asCvMat(cv::Mat& out_img, copy_type_t copy_type) const
+{
+#if MRPT_HAS_OPENCV
+	if (copy_type == DEEP_COPY)
+		out_img = m_impl->img.clone();
+	else
+		out_img = m_impl->img;
+#endif
+}
+
+cv::Mat& CImage::asCvMatRef()
+{
+#if MRPT_HAS_OPENCV
+	makeSureImageIsLoaded();
+	return m_impl->img;
+#endif
+}
+
+const cv::Mat& CImage::asCvMatRef() const
+{
+#if MRPT_HAS_OPENCV
+	makeSureImageIsLoaded();
+	return m_impl->img;
+#endif
+}
+
 void CImage::resize(
 	std::size_t width, std::size_t height, TImageChannels nChannels,
 	PixelDepth depth)
@@ -876,9 +902,10 @@ CImage CImage::grayscale() const
 
 // Auxiliary function for both ::grayscale() and ::grayscaleInPlace()
 #if MRPT_HAS_OPENCV
-static void my_img_to_grayscale(const cv::Mat& src, cv::Mat& dest)
+static bool my_img_to_grayscale(const cv::Mat& src, cv::Mat& dest)
 {
-	dest = cv::Mat(src.rows, src.cols, CV_8UC1);
+	if (dest.size() != src.size() || dest.type() != src.type())
+		dest = cv::Mat(src.rows, src.cols, CV_8UC1);
 
 // If possible, use SSE optimized version:
 #if MRPT_HAS_SSE3
@@ -889,34 +916,35 @@ static void my_img_to_grayscale(const cv::Mat& src, cv::Mat& dest)
 		ASSERT_(is_aligned<16>(dest.data));
 		image_SSSE3_bgr_to_gray_8u(
 			src.ptr<uint8_t>(), dest.ptr<uint8_t>(), src.cols, src.rows);
-		return;
+		return true;
 	}
 #endif
 
 	// OpenCV Method:
 	cv::cvtColor(src, dest, CV_BGR2GRAY);
+	return false;
 }
 #endif
 
-void CImage::grayscale(CImage& ret) const
+bool CImage::grayscale(CImage& ret) const
 {
 #if MRPT_HAS_OPENCV
 	// The image is already grayscale??
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
 	if (m_impl->img.channels() == 1)
 	{
-		ret = *this;
-		return;
+		ret = *this;  // shallow copy
+		return true;
 	}
 	else
 	{
 		// Convert to a single luminance channel image
-		my_img_to_grayscale(m_impl->img, ret.m_impl->img);
+		return my_img_to_grayscale(m_impl->img, ret.m_impl->img);
 	}
 #endif
 }
 
-void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
+bool CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 {
 #if MRPT_HAS_OPENCV
 	makeSureImageIsLoaded();  // For delayed loaded images stored externally
@@ -938,7 +966,7 @@ void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 		if (img.channels() == 3 && interp == IMG_INTERP_NN)
 		{
 			image_SSSE3_scale_half_3c8u(img.data, img_out.data, w, h);
-			return;
+			return true;
 		}
 #endif
 #if MRPT_HAS_SSE2
@@ -947,11 +975,12 @@ void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 			if (interp == IMG_INTERP_NN)
 			{
 				image_SSE2_scale_half_1c8u(img.data, img_out.data, w, h);
-				return;
+				return true;
 			}
 			else if (interp == IMG_INTERP_LINEAR)
 			{
 				image_SSE2_scale_half_smooth_1c8u(img.data, img_out.data, w, h);
+				return true;
 			}
 		}
 #endif
@@ -960,6 +989,7 @@ void CImage::scaleHalf(CImage& out, TInterpolationMethod interp) const
 	// Fall back to slow method:
 	cv::resize(
 		img, img_out, img_out.size(), 0, 0, interpolationMethod2Cv(interp));
+	return false;
 #endif
 }
 

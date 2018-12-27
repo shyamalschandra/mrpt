@@ -21,14 +21,15 @@ using namespace mrpt::math;
 
 #if MRPT_HAS_OPENCV
 static void do_rectify(
-	CStereoRectifyMap& me, const cv::Mat& src_left, const cv::Mat& src_right,
-	cv::Mat& out_left, cv::Mat& out_right, int16_t* map_xl, int16_t* map_xr,
-	uint16_t* map_yl, uint16_t* map_yr, int interp_method)
+	const CStereoRectifyMap& me, const cv::Mat& src_left,
+	const cv::Mat& src_right, cv::Mat& out_left, cv::Mat& out_right,
+	int16_t* map_xl, int16_t* map_xr, uint16_t* map_yl, uint16_t* map_yr,
+	int interp_method)
 {
 	MRPT_START
-	ASSERT_(
-		srcImg_left.data != outImg_left.data &&
-		srcImg_right.data != outImg_right.data);
+	ASSERTMSG_(
+		src_left.data != out_left.data && src_right.data != out_right.data,
+		"in-place rectify not supported");
 
 	if (!me.isSet())
 		THROW_EXCEPTION(
@@ -276,8 +277,8 @@ void CStereoRectifyMap::rectify(
 	const cv::Mat in_left = in_left_image.asCvMat<cv::Mat>(SHALLOW_COPY);
 	const cv::Mat in_right = in_right_image.asCvMat<cv::Mat>(SHALLOW_COPY);
 
-	cv::Mat out_left = out_left_image.asCvMat<cv::Mat>(SHALLOW_COPY);
-	cv::Mat out_right = out_right_image.asCvMat<cv::Mat>(SHALLOW_COPY);
+	cv::Mat& out_left = out_left_image.asCvMatRef();
+	cv::Mat& out_right = out_right_image.asCvMatRef();
 
 	do_rectify(
 		*this, in_left, in_right, out_left, out_right,
@@ -292,28 +293,37 @@ void CStereoRectifyMap::rectify(
 }
 
 void CStereoRectifyMap::rectify(
-	mrpt::obs::CObservationStereoImages& stereo_image_observation,
+	mrpt::obs::CObservationStereoImages& o,
 	const bool use_internal_mem_cache) const
 {
 	MRPT_START
-	ASSERT_(stereo_image_observation.hasImageRight);
+	ASSERT_(o.hasImageRight);
 
 	// Rectify images:
-	this->rectify(
-		stereo_image_observation.imageLeft, stereo_image_observation.imageRight,
-		use_internal_mem_cache);
+	if (use_internal_mem_cache)
+	{
+		static mrpt::img::CImage left_rect, right_rect;
+		this->rectify(o.imageLeft, o.imageRight, left_rect, right_rect);
+		o.imageLeft = left_rect;
+		o.imageRight = right_rect;
+	}
+	else
+	{
+		mrpt::img::CImage left_rect, right_rect;
+		this->rectify(o.imageLeft, o.imageRight, left_rect, right_rect);
+		o.imageLeft = left_rect;
+		o.imageRight = right_rect;
+	}
 
 	// Copy output image parameters:
-	stereo_image_observation.setStereoCameraParams(
-		this->m_rectified_image_params);
+	o.setStereoCameraParams(this->m_rectified_image_params);
 
 	// Correct poses:
-	stereo_image_observation.cameraPose += m_rot_left;
+	o.cameraPose += m_rot_left;
 
-	const double d = stereo_image_observation.rightCameraPose.m_coords.norm();
+	const double d = o.rightCameraPose.m_coords.norm();
 	// the translation is now pure in the +X direction:
-	stereo_image_observation.rightCameraPose =
-		CPose3DQuat(d, .0, .0, mrpt::math::CQuaternionDouble());
+	o.rightCameraPose = CPose3DQuat(d, .0, .0, mrpt::math::CQuaternionDouble());
 
 	MRPT_END
 }

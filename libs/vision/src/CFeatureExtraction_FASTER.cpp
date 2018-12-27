@@ -134,14 +134,14 @@ void CFeatureExtraction::extractFeaturesFASTER_N(
 	// according to some quality measure
 	if (options.FASTOptions.use_KLT_response || nDesiredFeatures != 0)
 	{
-		const auto KLT_half_win = 4U;
+		const auto KLT_half_win = 4;
 		const auto max_x = inImg_gray.getWidth() - 1 - KLT_half_win;
 		const auto max_y = inImg_gray.getHeight() - 1 - KLT_half_win;
 
 		for (size_t i = 0; i < N; i++)
 		{
-			const auto x = corners[i].pt.x;
-			const auto y = corners[i].pt.y;
+			const auto x = static_cast<unsigned int>(corners[i].pt.x);
+			const auto y = static_cast<unsigned int>(corners[i].pt.y);
 			if (x > KLT_half_win && y > KLT_half_win && x <= max_x &&
 				y <= max_y)
 				corners[i].response =

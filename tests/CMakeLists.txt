@@ -112,3 +112,10 @@ foreach(_TSTLIB ${LST_LIB_TESTS})
 	set_target_properties(run_tests_${_TSTLIB} PROPERTIES FOLDER "unit tests")
 
 endforeach(_TSTLIB)
+
+# Special dependencies:
+if (TARGET test_mrpt_img)
+    if(CMAKE_MRPT_HAS_OPENCV)
+	target_link_libraries(test_mrpt_img ${OpenCV_LIBRARIES})
+    endif()
+endif()

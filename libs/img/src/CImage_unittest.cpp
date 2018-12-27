@@ -259,4 +259,46 @@ TEST(CImage, getChannelsOrder)
 	}
 }
 
+TEST(CImage, ChangeCvMatCopies)
+{
+	using namespace mrpt::img;
+
+	{
+		CImage a(20, 10, CH_GRAY);
+		a.at<uint8_t>(1, 2) = 0x80;
+		// change shallow copy:
+		cv::Mat m = a.asCvMat<cv::Mat>(SHALLOW_COPY);
+		m.at<uint8_t>(2, 1) = 0x70;
+		// Expect change in source:
+		EXPECT_EQ(a.at<uint8_t>(1, 2), 0x70);
+
+		// size:
+		cv::Mat& m2 = a.asCvMatRef();
+		cv::Mat& m3 = a.asCvMatRef();
+		EXPECT_EQ(&m2, &m3);
+
+		m2 = cv::Mat(40, 40, CV_8UC1);
+
+		cv::Mat& m4 = a.asCvMatRef();
+		EXPECT_EQ(&m2, &m4);
+
+		EXPECT_EQ(a.getWidth(), 40U);
+		EXPECT_EQ(a.getHeight(), 40U);
+	}
+	{
+		CImage a(20, 10, CH_GRAY);
+		a.at<uint8_t>(1, 2) = 0x80;
+		// change deep copy:
+		cv::Mat m = a.asCvMat<cv::Mat>(DEEP_COPY);
+		m.at<uint8_t>(2, 1) = 0x70;
+		// Expect NO change in source:
+		EXPECT_EQ(a.at<uint8_t>(1, 2), 0x80);
+
+		// size:
+		m = cv::Mat(40, 40, CV_8UC1);
+		EXPECT_EQ(a.getWidth(), 20U);
+		EXPECT_EQ(a.getHeight(), 10U);
+	}
+}
+
 #endif  // MRPT_HAS_OPENCV

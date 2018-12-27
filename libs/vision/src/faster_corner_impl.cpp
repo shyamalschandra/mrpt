@@ -23,12 +23,12 @@ void fast_corner_detect(
 	const cv::Mat& I, TSimpleFeatureList& corners, int barrier, uint8_t octave,
 	std::vector<size_t>* out_feats_index_by_row)
 {
-	auto ptr = reinterpret_cast<CVD::byte*>(I->imageData);
-	CVD::BasicImage<CVD::byte> img(ptr, {I->width, I->height}, I->widthStep);
+	auto ptr = I.data;
+	CVD::BasicImage<CVD::byte> img(ptr, {I.cols, I.rows}, I.step[0]);
 
 	std::vector<CVD::ImageRef> outputs;
 	// reerve enough corners for every pixel
-	outputs.reserve(I->width * I->height);
+	outputs.reserve(I.cols * I.rows);
 	F(img, outputs, barrier);
 	for (auto& output : outputs)
 	{
@@ -37,7 +37,7 @@ void fast_corner_detect(
 	if (out_feats_index_by_row)
 	{
 		auto& counters = *out_feats_index_by_row;
-		counters.assign(I->height, 0);
+		counters.assign(I.rows, 0);
 		for (auto& output : outputs)
 		{
 			counters[output.y]++;

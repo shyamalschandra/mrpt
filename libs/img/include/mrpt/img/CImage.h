@@ -328,8 +328,9 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		return ret;
 	}
 
-	//! \overload
-	void scaleHalf(CImage& out_image, TInterpolationMethod interp) const;
+	/** \overload
+	 *  \return true if an optimized SSE2/SSE3 version could be used. */
+	bool scaleHalf(CImage& out_image, TInterpolationMethod interp) const;
 
 	/** Returns a new image scaled up to double its original size.
 	 * \exception std::exception On odd size
@@ -482,7 +483,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Copy, move & swap operations
 		@{ */
 	[[deprecated("Use makeShallowCopy() instead")]]  //
-		inline void
+	inline void
 		setFromImageReadOnly(const CImage& o)
 	{
 		*this = o.makeShallowCopy();
@@ -538,7 +539,8 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Access to image contents (OpenCV data structure, and raw pixels)
 		@{ */
 
-	/** Makes a shallow or deep copy of this image into the provided cv::Mat */
+	/** Makes a shallow or deep copy of this image into the provided cv::Mat.
+	 * \sa asCvMatRef */
 	void asCvMat(cv::Mat& out_img, copy_type_t copy_type) const;
 
 	template <typename CV_MAT>
@@ -548,6 +550,13 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 		asCvMat(ret, copy_type);
 		return ret;
 	}
+
+	/** Get a reference to the internal cv::Mat, which can be resized, etc. and
+	 * changes will be reflected in this CImage object. */
+	cv::Mat& asCvMatRef();
+
+	/** \overload  */
+	const cv::Mat& asCvMatRef() const;
 
 	/**  Access to pixels without checking boundaries - Use normally the ()
 	  operator better, which checks the coordinates.
@@ -985,8 +994,11 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	CImage grayscale() const;
 
 	/** \overload.
-	 * In-place is supported by setting `ret=*this`. */
-	void grayscale(CImage& ret) const;
+	 * In-place is supported by setting `ret=*this`.
+	 * \return true if SSE2 version has been run (or if the image was already
+	 * grayscale)
+	 */
+	bool grayscale(CImage& ret) const;
 
 	/** Returns a color (RGB) version of the grayscale image, or a shallow copy
 	 * of itself if it is already a color image. \sa grayscale
