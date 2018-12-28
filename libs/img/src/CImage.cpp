@@ -1797,10 +1797,11 @@ void image_KLT_response_template(
 	{
 		const uint8_t* ptr = in + widthStep * yy + min_x;
 		unsigned int xx = min_x;
-		for (unsigned int ix = WIN_SIZE; ix; --ix, ++xx)
+		for (unsigned int ix = WIN_SIZE; ix; --ix, ++xx,++ptr)
 		{
-			const int32_t dx = ptr[+1] - ptr[-1];
-			const int32_t dy = ptr[+widthStep] - ptr[-widthStep];
+			const int32_t dx = static_cast<int32_t>(ptr[+1]) - static_cast<int32_t>(ptr[-1]);
+			const int32_t dy = static_cast<int32_t>(ptr[+widthStep]) -
+							   static_cast<int32_t>(ptr[-widthStep]);
 			gxx += dx * dx;
 			gxy += dx * dy;
 			gyy += dy * dy;
@@ -1820,7 +1821,7 @@ float CImage::KLT_response(
 	const auto& im1 = m_impl->img;
 	const auto img_w = static_cast<unsigned int>(im1.cols),
 			   img_h = static_cast<unsigned int>(im1.rows);
-	const auto widthStep = im1.step[0];
+	const int widthStep = im1.step[0];
 
 	// If any of those predefined values worked, do the generic way:
 	const unsigned int min_x = x - half_window_size;

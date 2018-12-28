@@ -382,12 +382,13 @@ TEST(CImage, KLT_response)
 	{
 		CImage a(100, 90, CH_GRAY);
 		a.filledRectangle(0, 0, 99, 99, TColor(0x10));
-		a.filledRectangle(40, 30, 41, 31, TColor(0xf0));
+		a.filledRectangle(40, 30, 41, 31, TColor(0x20));
+		a.saveToFile("a.png");
 
 		for (int w = 2; w < 12; w++)
 		{
 			const auto resp = a.KLT_response(40, 30, w);
-			// std::cout << "JLT [w=" << w << "]=" << resp << "\n";
+			EXPECT_GT(resp, 0.5f);
 		}
 	}
 }
