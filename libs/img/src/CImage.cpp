@@ -47,7 +47,7 @@ using namespace std;
 IMPLEMENTS_SERIALIZABLE(CImage, CSerializable, mrpt::img)
 
 bool CImage::DISABLE_ZIP_COMPRESSION = false;
-bool CImage::DISABLE_JPEG_COMPRESSION = false;
+bool CImage::DISABLE_JPEG_COMPRESSION = true;
 int CImage::SERIALIZATION_JPEG_QUALITY = 95;
 
 static std::string IMAGES_PATH_BASE(".");
@@ -1780,7 +1780,7 @@ void CImage::equalizeHist(CImage& out_img) const
 }
 template <unsigned int HALF_WIN_SIZE>
 void image_KLT_response_template(
-	const uint8_t* in, const unsigned widthStep, unsigned int x, unsigned int y,
+    const uint8_t* in, const int widthStep, unsigned int x, unsigned int y,
 	int32_t& _gxx, int32_t& _gyy, int32_t& _gxy)
 {
 	const auto min_x = x - HALF_WIN_SIZE;

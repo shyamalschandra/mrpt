@@ -241,7 +241,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	 * images are JPEG-compressed to save space. If for some reason you prefer
 	 * storing RAW image data, disable this feature by setting this flag to
 	 * true.
-	 *  (Default = false) */
+	 *  (Default = true) */
 	static bool DISABLE_JPEG_COMPRESSION;
 
 	/** Unless DISABLE_JPEG_COMPRESSION=true, this sets the JPEG quality (range
@@ -483,7 +483,7 @@ class CImage : public mrpt::serialization::CSerializable, public CCanvas
 	/** @name Copy, move & swap operations
 		@{ */
 	[[deprecated("Use makeShallowCopy() instead")]]  //
-	inline void
+	    inline void
 		setFromImageReadOnly(const CImage& o)
 	{
 		*this = o.makeShallowCopy();

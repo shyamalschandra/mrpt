@@ -9,6 +9,8 @@
 
 #include <mrpt/img/CImage.h>
 #include <mrpt/img/TColor.h>
+#include <mrpt/serialization/CArchive.h>
+#include <mrpt/io/CMemoryStream.h>
 #include <mrpt/math/CMatrixTemplateNumeric.h>
 #include <CTraitsTest.h>
 #include <gtest/gtest.h>
@@ -298,6 +300,95 @@ TEST(CImage, ChangeCvMatCopies)
 		m = cv::Mat(40, 40, CV_8UC1);
 		EXPECT_EQ(a.getWidth(), 20U);
 		EXPECT_EQ(a.getHeight(), 10U);
+	}
+}
+
+TEST(CImage, ScaleImage)
+{
+	using namespace mrpt::img;
+	CImage a;
+	bool load_ok = a.loadFromFile(tstImgFileColor);
+	EXPECT_TRUE(load_ok);
+
+	{
+		CImage b;
+		a.scaleImage(b, 600, 400);
+		EXPECT_EQ(b.getWidth(), 600U);
+		EXPECT_EQ(b.getHeight(), 400U);
+		EXPECT_EQ(a.getWidth(), 320U);
+		EXPECT_EQ(a.getHeight(), 240U);
+	}
+	{
+		CImage b;
+		a.scaleHalf(b, IMG_INTERP_NN);
+		EXPECT_EQ(b.getWidth(), 160U);
+		EXPECT_EQ(b.getHeight(), 120U);
+		EXPECT_EQ(a.getWidth(), 320U);
+		EXPECT_EQ(a.getHeight(), 240U);
+	}
+	{
+		CImage b;
+		a.scaleHalf(b, IMG_INTERP_LINEAR);
+		EXPECT_EQ(b.getWidth(), 160U);
+		EXPECT_EQ(b.getHeight(), 120U);
+		EXPECT_EQ(a.getWidth(), 320U);
+		EXPECT_EQ(a.getHeight(), 240U);
+	}
+	{
+		CImage b;
+		a.scaleDouble(b, IMG_INTERP_NN);
+		EXPECT_EQ(b.getWidth(), 640U);
+		EXPECT_EQ(b.getHeight(), 480U);
+		EXPECT_EQ(a.getWidth(), 320U);
+		EXPECT_EQ(a.getHeight(), 240U);
+	}
+	{
+		CImage b;
+		a.scaleDouble(b, IMG_INTERP_LINEAR);
+		EXPECT_EQ(b.getWidth(), 640U);
+		EXPECT_EQ(b.getHeight(), 480U);
+		EXPECT_EQ(a.getWidth(), 320U);
+		EXPECT_EQ(a.getHeight(), 240U);
+	}
+}
+
+TEST(CImage, Serialize)
+{
+	using namespace mrpt::img;
+	CImage a;
+	bool load_ok = a.loadFromFile(tstImgFileColor);
+	EXPECT_TRUE(load_ok);
+
+	mrpt::math::CMatrixFloat am;
+	a.getAsMatrix(am, true, 0, 0, -1, -1, false /* dont normalize to [0,1] */);
+
+	mrpt::io::CMemoryStream buf;
+	auto arch = mrpt::serialization::archiveFrom(buf);
+	arch << a;
+	buf.Seek(0);
+	CImage b;
+	arch >> b;
+
+	mrpt::math::CMatrixFloat bm;
+	b.getAsMatrix(bm, true, 0, 0, -1, -1, false /* dont normalize to [0,1] */);
+
+	EXPECT_EQ(am, bm);
+}
+
+TEST(CImage, KLT_response)
+{
+	using namespace mrpt::img;
+
+	{
+		CImage a(100, 90, CH_GRAY);
+		a.filledRectangle(0, 0, 99, 99, TColor(0x10));
+		a.filledRectangle(40, 30, 41, 31, TColor(0xf0));
+
+		for (int w = 2; w < 12; w++)
+		{
+			const auto resp = a.KLT_response(40, 30, w);
+			// std::cout << "JLT [w=" << w << "]=" << resp << "\n";
+		}
 	}
 }
 
