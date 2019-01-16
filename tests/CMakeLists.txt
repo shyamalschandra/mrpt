@@ -87,10 +87,12 @@ foreach(_TSTLIB ${LST_LIB_TESTS})
 	set(lst_deps ${_TSTLIB_DASH} ${lst_deps}) # The order in this list is very important for linking!
 	foreach(_DEPLIB ${lst_deps})
 		# Include dirs:
-		string(REGEX REPLACE "mrpt-(.*)" "\\1" _DEPLIB_DASH ${_DEPLIB})
-		# This link command automatically imports all required "include directories"
-		# and other PUBLIC dependencies of the linked target:
-		target_link_libraries(test_${_TSTLIB} ${_DEPLIB})
+		if (_DEPLIB MATCHES "^mrpt-?:*(.*)")
+			string(REGEX REPLACE "mrpt-?:*(.*)" "\\1" _DEPLIB_DASH ${_DEPLIB})
+			# This link command automatically imports all required "include directories"
+			# and other PUBLIC dependencies of the linked target:
+			target_link_libraries(test_${_TSTLIB} mrpt::${_DEPLIB_DASH})
+		endif()
 	endforeach(_DEPLIB)
 
 	# Run it:
